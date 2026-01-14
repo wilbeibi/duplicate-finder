@@ -5,7 +5,6 @@
 	"minAppVersion": "0.15.0",
 	"description": "Find and manage duplicate notes in your vault using exact and fuzzy matching.",
 	"author": "Yggdrasil",
-	"authorUrl": "",
-	"fundingUrl": "",
+	"authorUrl": "https://github.com/wilbeibi",
 	"isDesktopOnly": true
 }
