@@ -1,0 +1,70 @@
+name: Validate Plugin
+
+on:
+  workflow_dispatch:
+  
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Use Node.js 20
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Validate manifest
+      run: |
+        echo "Validating manifest.json..."
+        node -e "
+          const manifest = require('./manifest.json');
+          const required = ['id', 'name', 'version', 'minAppVersion', 'description'];
+          const missing = required.filter(key => !manifest[key]);
+          if (missing.length > 0) {
+            console.error('Missing required fields:', missing);
+            process.exit(1);
+          }
+          console.log('✅ manifest.json is valid');
+          console.log('Plugin ID:', manifest.id);
+          console.log('Version:', manifest.version);
+          console.log('Min App Version:', manifest.minAppVersion);
+        "
+        
+    - name: Run tests
+      run: npm test -- --run
+      
+    - name: Build plugin
+      run: npm run build
+      
+    - name: Validate build output
+      run: |
+        echo "Validating build output..."
+        
+        # Check file sizes
+        main_size=$(stat -f%z main.js 2>/dev/null || stat -c%s main.js)
+        manifest_size=$(stat -f%z manifest.json 2>/dev/null || stat -c%s manifest.json)
+        styles_size=$(stat -f%z styles.css 2>/dev/null || stat -c%s styles.css)
+        
+        echo "📦 main.js: ${main_size} bytes"
+        echo "📄 manifest.json: ${manifest_size} bytes"
+        echo "🎨 styles.css: ${styles_size} bytes"
+        
+        # Validate minimum requirements
+        if [ $main_size -lt 1000 ]; then
+          echo "❌ main.js seems too small"
+          exit 1
+        fi
+        
+        if [ $manifest_size -lt 100 ]; then
+          echo "❌ manifest.json seems too small"
+          exit 1
+        fi
+        
+        echo "✅ All build artifacts look good!"

@@ -1,90 +1,89 @@
-# Obsidian Sample Plugin
+# Duplicate Finder for Obsidian
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+Find and manage duplicate notes in your Obsidian vault using exact matching and fuzzy similarity detection.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## Features
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+- **Exact duplicate detection**: Finds notes with identical content using SHA-256 hashing
+- **Fuzzy duplicate detection**: Discovers similar notes using MinHash algorithm
+- **Results panel**: Browse duplicate pairs in a dedicated sidebar view
+- **Sort & filter**: Sort results by similarity, creation date, modified date, or file size
+- **Safe deletion**: Move duplicates to trash with confirmation dialog
+- **Progress tracking**: Visual progress bar with cancellation support
+- **Signature caching**: IndexedDB caching for faster rescans
 
-## First time developing plugins?
+## Installation
 
-Quick starting guide for new plugin devs:
+### Manual installation
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+1. Download `main.js`, `manifest.json`, and `styles.css` from the latest release
+2. Create folder: `<vault>/.obsidian/plugins/duplicate-finder/`
+3. Copy the downloaded files into the folder
+4. Reload Obsidian
+5. Enable the plugin in Settings → Community plugins
 
-## Releasing new releases
+## Usage
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+### Scan for duplicates
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+- Click the ribbon icon (copy icon) in the left sidebar, or
+- Use command palette: "Duplicate Finder: Scan vault for duplicates"
 
-## Adding your plugin to the community plugin list
+### View results
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+Results appear in a sidebar panel showing:
+- Similarity percentage badge
+- Match type (exact or similar)
+- File names with clickable links
+- File path, size, and creation date
+- Age indicator (older/newer)
 
-## How to use
+### Delete duplicates
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+Click the trash icon next to any file to move it to trash. The other file in the pair will be kept.
 
-## Manually installing the plugin
+### Settings
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+Configure the plugin in Settings → Duplicate Finder:
 
-## Improve code quality with eslint
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
+| Setting | Description | Default |
+|---------|-------------|---------|
+| Similarity threshold | Minimum similarity to consider as duplicate (50-100%) | 70% |
+| Minimum content length | Skip notes shorter than this (characters) | 50 |
+| Excluded folders | Folders to skip when scanning | (none) |
+| Excluded patterns | Regex patterns to exclude | (none) |
+| Enable cache | Cache signatures for faster rescans | Enabled |
+| Shingle size | Words per shingle for fuzzy matching | 3 |
+| Number of hash functions | MinHash signature size | 128 |
 
-## Funding URL
+## How it works
 
-You can include funding URLs where people who use your plugin can financially support it.
+### Exact matching
+Notes are hashed using SHA-256. Identical hashes indicate exact duplicates.
 
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
+### Fuzzy matching
+The MinHash algorithm estimates Jaccard similarity between notes:
+1. Content is split into word-based shingles
+2. Each shingle is hashed using multiple hash functions
+3. The minimum hash value for each function forms the signature
+4. Signature overlap estimates content similarity
 
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+## Limitations
+
+- Desktop only (v0.1)
+- Performance: O(n²) comparison for n notes
+- Recommended for vaults under 10,000 notes
+- YAML frontmatter is excluded from comparison
+
+## Development
+
+```bash
+npm install
+npm run dev     # Watch mode
+npm run build   # Production build
+npm test        # Run tests
 ```
 
-If you have multiple URLs, you can also do:
+## License
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
-```
-
-## API Documentation
-
-See https://docs.obsidian.md
+MIT
