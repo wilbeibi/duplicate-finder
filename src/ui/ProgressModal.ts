@@ -6,6 +6,7 @@ export class ProgressModal extends Modal {
   private phaseEl: HTMLElement | null = null;
   private fileEl: HTMLElement | null = null;
   private barEl: HTMLElement | null = null;
+  private timingEl: HTMLElement | null = null;
   private onCancel: () => void;
 
   constructor(app: App, onCancel: () => void) {
@@ -29,6 +30,8 @@ export class ProgressModal extends Modal {
     this.progressEl.setText('0 / 0');
 
     this.fileEl = contentEl.createDiv({ cls: 'df-progress-file' });
+    
+    this.timingEl = contentEl.createDiv({ cls: 'df-progress-timing' });
 
     const cancelBtn = contentEl.createEl('button', {
       text: 'Cancel',
@@ -64,9 +67,30 @@ export class ProgressModal extends Modal {
     if (progress.currentFile && this.fileEl) {
       this.fileEl.setText(progress.currentFile);
     }
+    
+    // Display timing information
+    if (progress.timing && this.timingEl) {
+      const elapsed = this.formatTime(progress.timing.totalElapsed);
+      let timingText = `Elapsed: ${elapsed}`;
+      
+      if (progress.timing.estimatedRemaining && progress.timing.estimatedRemaining > 0) {
+        const remaining = this.formatTime(progress.timing.estimatedRemaining);
+        timingText += ` | Remaining: ~${remaining}`;
+      }
+      
+      this.timingEl.setText(timingText);
+    }
 
     if (progress.phase === 'complete' || progress.phase === 'cancelled') {
       setTimeout(() => this.close(), 500);
     }
+  }
+  
+  private formatTime(ms: number): string {
+    if (ms < 1000) return `${ms}ms`;
+    if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${minutes}m ${seconds}s`;
   }
 }

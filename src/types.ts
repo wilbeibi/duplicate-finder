@@ -58,6 +58,11 @@ export interface ScanProgress {
   current: number;
   total: number;
   currentFile?: string;
+  timing?: {
+    phaseStartTime: number;
+    totalElapsed: number;
+    estimatedRemaining?: number;
+  };
 }
 
 export type ScanProgressCallback = (progress: ScanProgress) => void;
@@ -72,4 +77,13 @@ export interface ScanResult {
   skippedCount: number;
   durationMs: number;
   timestamp: number;
+  timing?: {
+    fileDiscoveryMs: number;
+    contentReadingMs: number;
+    signatureComputingMs: number;
+    duplicateComparingMs: number;
+    averageFileProcessingMs: number;
+    averageComparisonMs: number;
+    totalComparisons: number;
+  };
 }

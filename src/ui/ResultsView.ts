@@ -82,6 +82,29 @@ export class ResultsView extends ItemView {
         cls: 'df-stat'
       });
       
+      // Display detailed timing if available
+      if (result.timing) {
+        const timingRow = header.createDiv({ cls: 'df-timing-row' });
+        
+        const scanTime = (result.timing.signatureComputingMs / 1000).toFixed(2);
+        const compareTime = (result.timing.duplicateComparingMs / 1000).toFixed(2);
+        const avgFileTime = result.timing.averageFileProcessingMs.toFixed(2);
+        const avgCompTime = (result.timing.averageComparisonMs * 1000).toFixed(2);
+        
+        timingRow.createSpan({ 
+          text: `Scan: ${scanTime}s (${avgFileTime}ms/file)`,
+          cls: 'df-timing-stat'
+        });
+        timingRow.createSpan({ 
+          text: `Compare: ${compareTime}s (${avgCompTime}μs/comp)`,
+          cls: 'df-timing-stat'
+        });
+        timingRow.createSpan({ 
+          text: `${result.timing.totalComparisons.toLocaleString()} comparisons`,
+          cls: 'df-timing-stat'
+        });
+      }
+      
       this.renderSortControls(header);
     }
   }

@@ -57,6 +57,10 @@ export class Comparator {
     const minHasher = new MinHasher();
     let comparisons = 0;
     const totalComparisons = (entries.length * (entries.length - 1)) / 2;
+    const comparisonStartTime = Date.now();
+    let slowComparisons = 0;
+    
+    console.log(`🔍 Starting ${totalComparisons.toLocaleString()} comparisons...`);
     
     for (let i = 0; i < entries.length; i++) {
       if (abortSignal.aborted) {
@@ -74,10 +78,19 @@ export class Comparator {
           continue;
         }
         
+        const compStart = Date.now();
         const similarity = minHasher.estimateSimilarity(
           sigA.minhash,
           sigB.minhash
         );
+        const compTime = Date.now() - compStart;
+        
+        if (compTime > 10) {
+          slowComparisons++;
+          if (slowComparisons <= 5) { // Only log first 5 slow comparisons
+            console.log(`⚠️ Slow comparison: ${pathA} vs ${pathB} took ${compTime}ms`);
+          }
+        }
         
         if (similarity >= this.threshold) {
           const pair = this.createPair(
@@ -96,12 +109,27 @@ export class Comparator {
       }
       
       if (i % 50 === 0 && onProgress) {
+        const elapsed = Date.now() - comparisonStartTime;
+        const estimatedRemaining = comparisons > 0 ? Math.round((elapsed / comparisons) * (totalComparisons - comparisons)) : 0;
+        
         onProgress({
           phase: 'comparing',
           current: comparisons,
           total: totalComparisons,
+          timing: {
+            phaseStartTime: comparisonStartTime,
+            totalElapsed: elapsed,
+            estimatedRemaining,
+          },
         });
       }
+    }
+    
+    const totalComparisonTime = Date.now() - comparisonStartTime;
+    console.log(`⚙️ Comparison completed: ${totalComparisonTime}ms for ${comparisons.toLocaleString()} comparisons`);
+    console.log(`  Average: ${(totalComparisonTime / comparisons).toFixed(4)}ms/comparison`);
+    if (slowComparisons > 0) {
+      console.log(`  ⚠️ Slow comparisons detected: ${slowComparisons}`);
     }
     
     return duplicates;

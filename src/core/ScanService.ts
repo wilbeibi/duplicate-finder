@@ -39,14 +39,26 @@ export class ScanService {
     try {
       const startTime = Date.now();
       
+      // Phase 1: File Discovery
+      const fileDiscoveryStart = Date.now();
       const files = this.getFilesToScan();
+      const fileDiscoveryMs = Date.now() - fileDiscoveryStart;
+      
       let skippedCount = 0;
+      let contentReadingMs = 0;
+      let signatureComputingMs = 0;
       
       onProgress?.({
-        phase: 'reading',
-        current: 0,
-        total: files.length,
+      phase: 'reading',
+      current: 0,
+      total: files.length,
+        timing: {
+          phaseStartTime: Date.now(),
+          totalElapsed: Date.now() - startTime,
+        },
       });
+      
+      console.log(`📁 File Discovery: ${fileDiscoveryMs}ms for ${files.length} files`);
       
       const signatures = new Map<string, { contentHash: string; minhash: number[]; }>;
       
@@ -57,20 +69,34 @@ export class ScanService {
         
         const file = files[i]!;
         
+        const phaseStart = Date.now();
         onProgress?.({
           phase: 'hashing',
           current: i + 1,
           total: files.length,
           currentFile: file.path,
+          timing: {
+            phaseStartTime: phaseStart,
+            totalElapsed: Date.now() - startTime,
+            estimatedRemaining: this.estimateRemainingTime(i + 1, files.length, Date.now() - startTime),
+          },
         });
         
         try {
+          const fileProcessStart = Date.now();
           const signature = await this.computeSignature(file);
+          const fileProcessTime = Date.now() - fileProcessStart;
           
           if (signature) {
             signatures.set(file.path, signature);
+            signatureComputingMs += fileProcessTime;
           } else {
             skippedCount++;
+          }
+          
+          // Log slow files for analysis
+          if (fileProcessTime > 100) {
+            console.log(`⚠️ Slow file processing: ${file.path} took ${fileProcessTime}ms`);
           }
         } catch (error) {
           console.error(`Error processing ${file.path}:`, error);
@@ -80,11 +106,18 @@ export class ScanService {
       
 
       
+      const comparingStart = Date.now();
       onProgress?.({
         phase: 'comparing',
         current: 0,
         total: signatures.size,
+        timing: {
+          phaseStartTime: comparingStart,
+          totalElapsed: Date.now() - startTime,
+        },
       });
+      
+      console.log(`📊 Starting comparison phase: ${signatures.size} files to compare`);
       
       const duplicates = await this.comparator.findDuplicates(
         signatures,
@@ -93,13 +126,37 @@ export class ScanService {
         onProgress
       );
       
+      const duplicateComparingMs = Date.now() - comparingStart;
+      console.log(`⚙️ Comparison phase completed: ${duplicateComparingMs}ms for ${duplicates.length} duplicate pairs`);
+      
       onProgress?.({
         phase: 'complete',
         current: signatures.size,
         total: signatures.size,
       });
       
-      return this.buildResult(duplicates, signatures.size, skippedCount, startTime, false);
+      const totalComparisons = (signatures.size * (signatures.size - 1)) / 2;
+      const averageFileProcessingMs = signatureComputingMs / Math.max(1, signatures.size);
+      const averageComparisonMs = duplicateComparingMs / Math.max(1, totalComparisons);
+      
+      const timing = {
+        fileDiscoveryMs,
+        contentReadingMs,
+        signatureComputingMs,
+        duplicateComparingMs,
+        averageFileProcessingMs,
+        averageComparisonMs,
+        totalComparisons,
+      };
+      
+      console.log(`📊 Performance Summary:`);
+      console.log(`  File Discovery: ${fileDiscoveryMs}ms`);
+      console.log(`  Signature Computing: ${signatureComputingMs}ms (avg: ${averageFileProcessingMs.toFixed(2)}ms/file)`);
+      console.log(`  Duplicate Comparing: ${duplicateComparingMs}ms (avg: ${averageComparisonMs.toFixed(4)}ms/comparison)`);
+      console.log(`  Total Comparisons: ${totalComparisons.toLocaleString()}`);
+      console.log(`  Files Processed: ${signatures.size}, Skipped: ${skippedCount}`);
+      
+      return this.buildResult(duplicates, signatures.size, skippedCount, startTime, false, timing);
     } finally {
       this.abortController = null;
     }
@@ -165,12 +222,19 @@ export class ScanService {
     };
   }
 
+  private estimateRemainingTime(current: number, total: number, elapsed: number): number {
+    if (current === 0) return 0;
+    const rate = elapsed / current;
+    return Math.round(rate * (total - current));
+  }
+
   private buildResult(
     duplicates: any[],
     scannedCount: number,
     skippedCount: number,
     startTime: number,
-    cancelled: boolean
+    cancelled: boolean,
+    timing?: any
   ): ScanResult {
     return {
       duplicates: cancelled ? [] : duplicates,
@@ -178,6 +242,7 @@ export class ScanService {
       skippedCount,
       durationMs: Date.now() - startTime,
       timestamp: Date.now(),
+      timing,
     };
   }
 }

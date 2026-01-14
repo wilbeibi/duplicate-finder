@@ -30,6 +30,19 @@
   color: var(--text-muted);
 }
 
+.df-timing-row {
+  display: flex;
+  gap: 12px;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-accent);
+  margin-top: 4px;
+  font-family: var(--font-monospace);
+}
+
+.df-timing-stat {
+  opacity: 0.8;
+}
+
 .df-sort-row {
   display: flex;
   align-items: center;
@@ -218,10 +231,17 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   max-width: 300px;
   margin-left: auto;
   margin-right: auto;
+}
+
+.df-progress-timing {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-accent);
+  margin-bottom: 16px;
+  font-family: var(--font-monospace);
 }
 
 .df-cancel-btn {
