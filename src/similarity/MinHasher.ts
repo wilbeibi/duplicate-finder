@@ -21,8 +21,12 @@ export class MinHasher {
     }
   }
 
-  compute(content: string): number[] {
-    const shingles = this.createShingles(content);
+  getShingles(content: string): Set<string> {
+    return this.createShingles(content);
+  }
+
+  compute(content: string, filteredShingles?: Set<string>): number[] {
+    const shingles = filteredShingles ?? this.createShingles(content);
     
     if (shingles.size === 0) {
       return new Array(this.numHashes).fill(0xFFFFFFFF);

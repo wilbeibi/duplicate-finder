@@ -8,6 +8,7 @@ import {
 import { ContentExtractor } from './ContentExtractor';
 import { ExactHasher } from '../similarity/ExactHasher';
 import { MinHasher } from '../similarity/MinHasher';
+import { ShingleFilter } from '../similarity/ShingleFilter';
 import { Comparator } from '../similarity/Comparator';
 
 export class ScanService {
@@ -60,6 +61,25 @@ export class ScanService {
       
       console.log(`📁 File Discovery: ${fileDiscoveryMs}ms for ${files.length} files`);
       
+      const corpusScanStart = Date.now();
+      const shingleFilter = new ShingleFilter(this.settings.shingleFilterThreshold);
+      const contentCache = new Map<string, string>();
+      
+      for (const file of files) {
+        if (this.abortController.signal.aborted) {
+          return this.buildResult([], 0, 0, startTime, true);
+        }
+        const rawContent = await this.app.vault.cachedRead(file);
+        const content = this.extractor.extract(rawContent);
+        contentCache.set(file.path, content);
+        const shingles = this.minHasher.getShingles(content);
+        shingleFilter.addDocument(shingles);
+      }
+      
+      const corpusScanMs = Date.now() - corpusScanStart;
+      const filterStats = shingleFilter.getStats();
+      console.log(`🔍 Corpus scan: ${corpusScanMs}ms - ${filterStats.totalShingles} unique shingles, ${filterStats.filteredShingles} filtered (>${this.settings.shingleFilterThreshold * 100}% frequency)`);
+      
       const signatures = new Map<string, { contentHash: string; minhash: number[]; }>;
       
       for (let i = 0; i < files.length; i++) {
@@ -84,7 +104,7 @@ export class ScanService {
         
         try {
           const fileProcessStart = Date.now();
-          const signature = await this.computeSignature(file);
+          const signature = await this.computeSignatureWithFilter(file, contentCache, shingleFilter);
           const fileProcessTime = Date.now() - fileProcessStart;
           
           if (signature) {
@@ -204,9 +224,15 @@ export class ScanService {
     return true;
   }
 
-  private async computeSignature(file: TFile): Promise<{ contentHash: string; minhash: number[]; } | null> {
-    const rawContent = await this.app.vault.cachedRead(file);
-    const content = this.extractor.extract(rawContent);
+  private async computeSignatureWithFilter(
+    file: TFile,
+    contentCache: Map<string, string>,
+    shingleFilter: ShingleFilter
+  ): Promise<{ contentHash: string; minhash: number[]; } | null> {
+    const content = contentCache.get(file.path);
+    if (!content) {
+      return null;
+    }
     
     const lineCount = this.extractor.countLines(content);
     if (lineCount < this.settings.minContentLines) {
@@ -214,7 +240,9 @@ export class ScanService {
     }
     
     const contentHash = await this.exactHasher.hash(content);
-    const minhash = this.minHasher.compute(content);
+    const shingles = this.minHasher.getShingles(content);
+    const filteredShingles = shingleFilter.filter(shingles);
+    const minhash = this.minHasher.compute(content, filteredShingles);
     
     return {
       contentHash,

@@ -1,5 +1,5 @@
-export const DEFAULT_SHINGLE_SIZE = 3;
-export const DEFAULT_NUM_HASHES = 128;
+export const DEFAULT_SHINGLE_SIZE = 5;
+export const DEFAULT_NUM_HASHES = 64;
 export const DEFAULT_SIMILARITY_THRESHOLD = 0.7;
 
 export const HASH_PRIME = 0x01000193;
