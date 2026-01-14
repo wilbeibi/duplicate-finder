@@ -7,11 +7,15 @@ export class ProgressModal extends Modal {
   private fileEl: HTMLElement | null = null;
   private barEl: HTMLElement | null = null;
   private timingEl: HTMLElement | null = null;
+  private cancelBtn: HTMLButtonElement | null = null;
+  private settingsBtn: HTMLButtonElement | null = null;
   private onCancel: () => void;
+  private onOpenSettings: () => void;
 
-  constructor(app: App, onCancel: () => void) {
+  constructor(app: App, onCancel: () => void, onOpenSettings: () => void) {
     super(app);
     this.onCancel = onCancel;
+    this.onOpenSettings = onOpenSettings;
   }
 
   onOpen(): void {
@@ -33,12 +37,22 @@ export class ProgressModal extends Modal {
     
     this.timingEl = contentEl.createDiv({ cls: 'df-progress-timing' });
 
-    const cancelBtn = contentEl.createEl('button', {
+    this.cancelBtn = contentEl.createEl('button', {
       text: 'Cancel',
       cls: 'df-cancel-btn',
     });
-    cancelBtn.addEventListener('click', () => {
+    this.cancelBtn.addEventListener('click', () => {
       this.onCancel();
+      this.close();
+    });
+
+    this.settingsBtn = contentEl.createEl('button', {
+      text: 'Open settings',
+      cls: 'df-open-settings-btn',
+    });
+    this.settingsBtn.style.display = 'none';
+    this.settingsBtn.addEventListener('click', () => {
+      this.onOpenSettings();
       this.close();
     });
   }
@@ -82,7 +96,12 @@ export class ProgressModal extends Modal {
     }
 
     if (progress.phase === 'complete' || progress.phase === 'cancelled') {
-      setTimeout(() => this.close(), 500);
+      if (this.cancelBtn) {
+        this.cancelBtn.style.display = 'none';
+      }
+      if (this.settingsBtn && progress.phase === 'complete') {
+        this.settingsBtn.style.display = '';
+      }
     }
   }
   

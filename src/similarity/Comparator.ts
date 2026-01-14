@@ -1,9 +1,8 @@
 import { TFile } from 'obsidian';
-import { 
-  DuplicatePair, 
+import type {
+  DuplicatePair,
   PairMetadata,
-  ScanProgress,
-  ScanProgressCallback 
+  ScanProgressCallback
 } from '../types';
 import { MinHasher } from './MinHasher';
 
@@ -41,7 +40,6 @@ export class Comparator {
               paths[j]!,
               1.0,
               'exact',
-              signatures,
               getFileByPath
             );
             
@@ -96,11 +94,11 @@ export class Comparator {
           const pair = this.createPair(
             pathA,
             pathB,
-            similarity,
-            'minhash',
-            signatures,
-            getFileByPath
-          );
+              similarity,
+              'minhash',
+              getFileByPath
+            );
+
           
           if (pair) {
             duplicates.push(pair);
@@ -144,7 +142,6 @@ export class Comparator {
     pathB: string,
     similarity: number,
     method: 'exact' | 'minhash',
-    signatures: Map<string, { contentHash: string; minhash: number[]; }>,
     getFileByPath: (path: string) => TFile | null
   ): DuplicatePair | null {
     const fileA = getFileByPath(pathA);

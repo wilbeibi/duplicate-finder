@@ -1,10 +1,17 @@
-import { Plugin, Notice } from 'obsidian';
+import { App, Plugin, Notice } from 'obsidian';
 import { DuplicateFinderSettings, DEFAULT_SETTINGS } from './types';
 import { DuplicateFinderSettingsTab } from './settings';
 import { ScanService } from './core/ScanService';
 import { ResultStore } from './core/ResultStore';
 import { ResultsView, RESULTS_VIEW_TYPE } from './ui/ResultsView';
 import { ProgressModal } from './ui/ProgressModal';
+
+type AppWithSettings = App & {
+	setting: {
+		open: () => void;
+		openTabById: (id: string) => void;
+	};
+};
 
 export default class DuplicateFinderPlugin extends Plugin {
 	settings: DuplicateFinderSettings;
@@ -53,9 +60,15 @@ export default class DuplicateFinderPlugin extends Plugin {
 			return;
 		}
 		
-		const progressModal = new ProgressModal(this.app, () => {
-			this.scanService.cancel();
-		});
+		const progressModal = new ProgressModal(
+			this.app,
+			() => {
+				this.scanService.cancel();
+			},
+			() => {
+				this.openSettings();
+			}
+		);
 		progressModal.open();
 		
 		try {
@@ -97,6 +110,12 @@ export default class DuplicateFinderPlugin extends Plugin {
 			const view = leaf.view as ResultsView;
 			view.render();
 		}
+	}
+
+	openSettings(): void {
+		const appWithSettings = this.app as AppWithSettings;
+		appWithSettings.setting.open();
+		appWithSettings.setting.openTabById(this.manifest.id);
 	}
 
 	async loadSettings() {

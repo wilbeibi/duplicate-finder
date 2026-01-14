@@ -297,3 +297,31 @@
   justify-content: flex-end;
   gap: 8px;
 }
+
+/* Hint row for dominant folders */
+.df-hint-row {
+  background: var(--background-secondary-alt);
+  padding: 10px 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: var(--font-ui-smaller);
+  border: 1px solid var(--background-modifier-border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.df-hint-text {
+  color: var(--text-muted);
+}
+
+.df-hint-action {
+  color: var(--text-accent);
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.df-hint-action:hover {
+  color: var(--text-accent-hover);
+}

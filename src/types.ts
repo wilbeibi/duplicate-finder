@@ -12,7 +12,6 @@ export interface DuplicateFinderSettings {
   
   // Similarity tuning
   similarityThreshold: number;     // 0.0 - 1.0 (default: 0.7)
-  shingleFilterThreshold: number;  // 0.0 - 1.0, filter shingles in more than X% of docs
 }
 
 export const DEFAULT_SETTINGS: DuplicateFinderSettings = {
@@ -20,7 +19,6 @@ export const DEFAULT_SETTINGS: DuplicateFinderSettings = {
   excludePatterns: [],
   minContentLines: 100,
   similarityThreshold: 0.9,
-  shingleFilterThreshold: 0.10,
 };
 
 // ============================================

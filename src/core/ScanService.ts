@@ -1,14 +1,12 @@
 import { App, TFile } from 'obsidian';
-import { 
-  DuplicateFinderSettings, 
-  ScanResult, 
-  ScanProgressCallback,
-  ScanProgress
+import type {
+  DuplicateFinderSettings,
+  ScanResult,
+  ScanProgressCallback
 } from '../types';
 import { ContentExtractor } from './ContentExtractor';
 import { ExactHasher } from '../similarity/ExactHasher';
 import { MinHasher } from '../similarity/MinHasher';
-import { ShingleFilter } from '../similarity/ShingleFilter';
 import { Comparator } from '../similarity/Comparator';
 
 export class ScanService {
@@ -61,8 +59,6 @@ export class ScanService {
       
       console.log(`📁 File Discovery: ${fileDiscoveryMs}ms for ${files.length} files`);
       
-      const corpusScanStart = Date.now();
-      const shingleFilter = new ShingleFilter(this.settings.shingleFilterThreshold);
       const contentCache = new Map<string, string>();
       
       for (const file of files) {
@@ -72,13 +68,7 @@ export class ScanService {
         const rawContent = await this.app.vault.cachedRead(file);
         const content = this.extractor.extract(rawContent);
         contentCache.set(file.path, content);
-        const shingles = this.minHasher.getShingles(content);
-        shingleFilter.addDocument(shingles);
       }
-      
-      const corpusScanMs = Date.now() - corpusScanStart;
-      const filterStats = shingleFilter.getStats();
-      console.log(`🔍 Corpus scan: ${corpusScanMs}ms - ${filterStats.totalShingles} unique shingles, ${filterStats.filteredShingles} filtered (>${this.settings.shingleFilterThreshold * 100}% frequency)`);
       
       const signatures = new Map<string, { contentHash: string; minhash: number[]; }>;
       
@@ -104,7 +94,7 @@ export class ScanService {
         
         try {
           const fileProcessStart = Date.now();
-          const signature = await this.computeSignatureWithFilter(file, contentCache, shingleFilter);
+          const signature = await this.computeSignature(file, contentCache);
           const fileProcessTime = Date.now() - fileProcessStart;
           
           if (signature) {
@@ -224,10 +214,9 @@ export class ScanService {
     return true;
   }
 
-  private async computeSignatureWithFilter(
+  private async computeSignature(
     file: TFile,
-    contentCache: Map<string, string>,
-    shingleFilter: ShingleFilter
+    contentCache: Map<string, string>
   ): Promise<{ contentHash: string; minhash: number[]; } | null> {
     const content = contentCache.get(file.path);
     if (!content) {
@@ -240,9 +229,7 @@ export class ScanService {
     }
     
     const contentHash = await this.exactHasher.hash(content);
-    const shingles = this.minHasher.getShingles(content);
-    const filteredShingles = shingleFilter.filter(shingles);
-    const minhash = this.minHasher.compute(content, filteredShingles);
+    const minhash = this.minHasher.compute(content);
     
     return {
       contentHash,

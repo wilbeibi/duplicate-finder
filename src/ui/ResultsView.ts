@@ -12,6 +12,7 @@ export class ResultsView extends ItemView {
   
   private sortField: SortField = 'similarity';
   private sortOrder: SortOrder = 'desc';
+  private hiddenFolder: string | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: DuplicateFinderPlugin) {
     super(leaf);
@@ -163,12 +164,73 @@ export class ResultsView extends ItemView {
   private renderResults(container: HTMLElement): void {
     const list = container.createDiv({ cls: 'df-results-list' });
     
-    const duplicates = this.resultStore.getDuplicates(
+    const allDuplicates = this.resultStore.getDuplicates(
       this.sortField,
       this.sortOrder
     );
+
+    // Calculate dominant folder (both files in same folder, count >= 5)
+    const folderCounts: Record<string, number> = {};
+    for (const pair of allDuplicates) {
+      const pathA = pair.fileA.parent?.path ?? '/';
+      const pathB = pair.fileB.parent?.path ?? '/';
+      if (pathA === pathB) {
+        folderCounts[pathA] = (folderCounts[pathA] || 0) + 1;
+      }
+    }
+
+    let dominantFolder: string | null = null;
+    let maxCount = 0;
+    for (const [folder, count] of Object.entries(folderCounts)) {
+      if (count >= 5 && count > maxCount) {
+        maxCount = count;
+        dominantFolder = folder;
+      }
+    }
+
+    // Render hint row if applicable
+    if (this.hiddenFolder) {
+      const hintRow = list.createDiv({ cls: 'df-hint-row' });
+      hintRow.createSpan({ 
+        text: `Hidden folder: ${this.hiddenFolder}`, 
+        cls: 'df-hint-text' 
+      });
+      const showAction = hintRow.createEl('a', { 
+        text: 'Show results', 
+        cls: 'df-hint-action' 
+      });
+      showAction.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.hiddenFolder = null;
+        this.render();
+      });
+    } else if (dominantFolder) {
+      const hintRow = list.createDiv({ cls: 'df-hint-row' });
+      hintRow.createSpan({ 
+        text: `Many duplicates (${maxCount}) from "${dominantFolder}".`, 
+        cls: 'df-hint-text' 
+      });
+      const hideAction = hintRow.createEl('a', { 
+        text: 'Hide from results', 
+        cls: 'df-hint-action' 
+      });
+      hideAction.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.hiddenFolder = dominantFolder;
+        this.render();
+      });
+    }
+
+    // Filter duplicates
+    const displayDuplicates = allDuplicates.filter(pair => {
+      if (!this.hiddenFolder) return true;
+      const pathA = pair.fileA.parent?.path ?? '/';
+      const pathB = pair.fileB.parent?.path ?? '/';
+      // Hide if BOTH files are in the hidden folder
+      return !(pathA === this.hiddenFolder && pathB === this.hiddenFolder);
+    });
     
-    for (const pair of duplicates) {
+    for (const pair of displayDuplicates) {
       this.renderDuplicateCard(list, pair);
     }
   }
