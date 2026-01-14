@@ -1,3 +1,22 @@
+<!-- OPENSPEC:START -->
+# OpenSpec Instructions
+
+These instructions are for AI assistants working in this project.
+
+Always open `@/openspec/AGENTS.md` when the request:
+- Mentions planning or proposals (words like proposal, spec, change, plan)
+- Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
+- Sounds ambiguous and you need the authoritative spec before coding
+
+Use `@/openspec/AGENTS.md` to learn:
+- How to create and apply change proposals
+- Spec format and conventions
+- Project structure and guidelines
+
+Keep this managed block so 'openspec update' can refresh the instructions.
+
+<!-- OPENSPEC:END -->
+
 # Obsidian community plugin
 
 ## Project overview
@@ -32,6 +51,17 @@ npm run dev
 ```bash
 npm run build
 ```
+
+## Justfile
+
+A `justfile` is available in the root for common operations. If you have `just` installed, you can use:
+
+- `just install`: Install dependencies
+- `just build`: Run production build
+- `just dev`: Run development watch mode
+- `just test`: Run tests
+- `just deploy`: Build and copy to vault (requires `$OBSIDIAN_VAULT_ROOT`)
+- `just clean`: Remove build artifacts
 
 ## Linting
 
@@ -80,10 +110,11 @@ npm run build
 
 ## Testing
 
-- Manual install for testing: copy `main.js`, `manifest.json`, `styles.css` (if any) to:
+- Manual install for testing: copy `main.js`, `manifest.json`, and `styles.css` (if any) to:
   ```
   <Vault>/.obsidian/plugins/<plugin-id>/
   ```
+- **Environment Variable**: Use `$OBSIDIAN_VAULT_ROOT` to refer to the root of the test vault. The plugin folder is always `$OBSIDIAN_VAULT_ROOT/.obsidian/plugins/duplicate-finder/`.
 - Reload Obsidian and enable the plugin in **Settings → Community plugins**.
 
 ## Commands & settings

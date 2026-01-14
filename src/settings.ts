@@ -17,8 +17,19 @@ export class DuplicateFinderSettingsTab extends PluginSettingTab {
 		containerEl.createEl('h2', { text: 'Duplicate Finder Settings' });
 
 		new Setting(containerEl)
+			.setName('Scan for duplicates')
+			.setDesc('Run a scan with current settings to find duplicate files')
+			.addButton(button => button
+				.setButtonText('Scan now')
+				.setCta()
+				.onClick(async () => {
+					await this.plugin.runScan();
+				})
+			);
+
+		new Setting(containerEl)
 			.setName('Similarity threshold')
-			.setDesc('Minimum similarity percentage to consider as duplicate (50-100%)')
+			.setDesc('Minimum similarity percentage to consider as duplicate (50-100%, default: 90%)')
 			.addSlider(slider => slider
 				.setLimits(50, 100, 5)
 				.setValue(this.plugin.settings.similarityThreshold * 100)
@@ -30,15 +41,15 @@ export class DuplicateFinderSettingsTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName('Minimum content length')
-			.setDesc('Skip notes with content shorter than this (characters)')
+			.setName('Minimum content lines')
+			.setDesc('Skip notes with fewer lines than this (default: 100)')
 			.addText(text => text
-				.setPlaceholder('50')
-				.setValue(String(this.plugin.settings.minContentLength))
+				.setPlaceholder('100')
+				.setValue(String(this.plugin.settings.minContentLines))
 				.onChange(async (value) => {
 					const num = parseInt(value, 10);
 					if (!isNaN(num) && num >= 0) {
-						this.plugin.settings.minContentLength = num;
+						this.plugin.settings.minContentLines = num;
 						await this.plugin.saveSettings();
 					}
 				})
@@ -71,49 +82,6 @@ export class DuplicateFinderSettingsTab extends PluginSettingTab {
 						.map(s => s.trim())
 						.filter(s => s.length > 0);
 					await this.plugin.saveSettings();
-				})
-			);
-
-		new Setting(containerEl)
-			.setName('Enable cache')
-			.setDesc('Cache signatures for faster rescans (recommended)')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.cacheEnabled)
-				.onChange(async (value) => {
-					this.plugin.settings.cacheEnabled = value;
-					await this.plugin.saveSettings();
-				})
-			);
-
-		containerEl.createEl('h3', { text: 'Advanced' });
-
-		new Setting(containerEl)
-			.setName('Shingle size')
-			.setDesc('Words per shingle for fuzzy matching (default: 3)')
-			.addText(text => text
-				.setPlaceholder('3')
-				.setValue(String(this.plugin.settings.shingleSize))
-				.onChange(async (value) => {
-					const num = parseInt(value, 10);
-					if (!isNaN(num) && num >= 1 && num <= 10) {
-						this.plugin.settings.shingleSize = num;
-						await this.plugin.saveSettings();
-					}
-				})
-			);
-
-		new Setting(containerEl)
-			.setName('Number of hash functions')
-			.setDesc('MinHash signature size (default: 128, higher = more accurate but slower)')
-			.addText(text => text
-				.setPlaceholder('128')
-				.setValue(String(this.plugin.settings.numHashFunctions))
-				.onChange(async (value) => {
-					const num = parseInt(value, 10);
-					if (!isNaN(num) && num >= 32 && num <= 512) {
-						this.plugin.settings.numHashFunctions = num;
-						await this.plugin.saveSettings();
-					}
 				})
 			);
 	}

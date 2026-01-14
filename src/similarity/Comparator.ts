@@ -1,6 +1,5 @@
 import { TFile } from 'obsidian';
 import { 
-  NoteSignature, 
   DuplicatePair, 
   PairMetadata,
   ScanProgress,
@@ -16,7 +15,7 @@ export class Comparator {
   }
 
   async findDuplicates(
-    signatures: Map<string, NoteSignature>,
+    signatures: Map<string, { contentHash: string; minhash: number[]; }>,
     getFileByPath: (path: string) => TFile | null,
     abortSignal: AbortSignal,
     onProgress?: ScanProgressCallback
@@ -117,7 +116,7 @@ export class Comparator {
     pathB: string,
     similarity: number,
     method: 'exact' | 'minhash',
-    signatures: Map<string, NoteSignature>,
+    signatures: Map<string, { contentHash: string; minhash: number[]; }>,
     getFileByPath: (path: string) => TFile | null
   ): DuplicatePair | null {
     const fileA = getFileByPath(pathA);

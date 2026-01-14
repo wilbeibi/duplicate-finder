@@ -158,6 +158,17 @@
   opacity: 0.8;
 }
 
+.df-folder-link {
+  color: var(--text-accent);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.df-folder-link:hover {
+  text-decoration: underline;
+  opacity: 1;
+}
+
 .df-age-older {
   color: var(--color-blue);
 }

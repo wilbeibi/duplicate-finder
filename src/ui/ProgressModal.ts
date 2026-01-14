@@ -17,7 +17,7 @@ export class ProgressModal extends Modal {
     const { contentEl } = this;
     contentEl.addClass('df-progress-modal');
 
-    contentEl.createEl('h3', { text: 'Scanning for duplicates...' });
+    contentEl.createEl('h3', { text: 'Scanning Markdown files...' });
 
     this.phaseEl = contentEl.createDiv({ cls: 'df-progress-phase' });
     this.phaseEl.setText('Preparing...');

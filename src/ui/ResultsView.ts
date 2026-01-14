@@ -191,7 +191,18 @@ export class ResultsView extends ItemView {
     });
     
     const meta = info.createDiv({ cls: 'df-file-meta' });
-    meta.createSpan({ text: file.parent?.path ?? '/', cls: 'df-file-path' });
+    
+    const folderPath = meta.createEl('a', { 
+      text: file.parent?.path ?? '/', 
+      cls: 'df-file-path df-folder-link',
+      href: '#'
+    });
+    folderPath.addEventListener('click', (e) => {
+      e.preventDefault();
+      // Reveal the file in the file explorer
+      this.app.workspace.trigger('reveal-file', file);
+    });
+    
     meta.createSpan({ text: ` • ${this.formatSize(size)}` });
     meta.createSpan({ text: ` • ${this.formatDate(created)}` });
     
