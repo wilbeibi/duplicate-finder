@@ -16,7 +16,7 @@ This document describes the architecture and code organization of the Duplicate 
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         Core Services                               │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌───────────────────┐   │
-│  │   ScanService   │  │   ResultStore   │  │   CacheService    │   │
+│  │   ScanService   │  │   ResultStore   │  │ ContentExtractor  │   │
 │  └─────────────────┘  └─────────────────┘  └───────────────────┘   │
 └─────────────────────────────────────────────────────────────────────┘
                                │
@@ -26,14 +26,6 @@ This document describes the architecture and code organization of the Duplicate 
 │  ┌─────────────────┐  ┌─────────────────┐  ┌───────────────────┐   │
 │  │   ExactHasher   │  │    MinHasher    │  │    Comparator     │   │
 │  └─────────────────┘  └─────────────────┘  └───────────────────┘   │
-└─────────────────────────────────────────────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                       Content Processing                            │
-│  ┌───────────────────────────────────────────────────────────────┐  │
-│  │                     ContentExtractor                          │  │
-│  └───────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -47,13 +39,12 @@ src/
 ├── core/
 │   ├── ScanService.ts   # Orchestrates the scan workflow
 │   ├── ResultStore.ts   # In-memory result storage with sort/filter
-│   ├── CacheService.ts  # IndexedDB persistence for signatures
 │   └── ContentExtractor.ts  # Extracts comparable content from notes
 ├── similarity/
 │   ├── Comparator.ts    # Finds duplicate pairs from signatures
 │   ├── ExactHasher.ts   # SHA-256 hashing for exact matches
 │   ├── MinHasher.ts     # MinHash algorithm for fuzzy matching
-│   └── constants.ts     # Default algorithm parameters
+│   └── constants.ts     # Algorithm defaults and cache constants
 └── ui/
     ├── ResultsView.ts   # Sidebar view displaying results
     ├── ProgressModal.ts # Progress dialog during scan
@@ -66,14 +57,18 @@ src/
 
 1. User triggers scan via ribbon icon or command palette
 2. `DuplicateFinderPlugin.runScan()` opens `ProgressModal` and calls `ScanService.scan()`
-3. `ScanService` filters files by exclusion rules and iterates:
-   - Check `CacheService` for fresh cached signature
-   - If cache miss: read file → `ContentExtractor.extract()` → `ExactHasher.hash()` + `MinHasher.compute()`
-   - Store new signatures in cache
-4. `Comparator.findDuplicates()` performs:
-   - Group by `contentHash` for exact matches
-   - O(n²) MinHash comparison for fuzzy matches above threshold
-5. Results stored in `ResultStore`, `ResultsView` renders
+3. `ScanService`:
+   - collects markdown files
+   - applies folder and regex exclusions
+   - reads content and stores it in an in-memory map
+4. For each file:
+   - `ContentExtractor.extract()` removes frontmatter and normalizes whitespace
+   - `ContentExtractor.countLines()` enforces `minContentLines`
+   - `ExactHasher.hash()` + `MinHasher.compute()` generate signatures
+5. `Comparator.findDuplicates()`:
+   - groups exact matches by content hash
+   - performs O(n²) MinHash comparisons for fuzzy matches
+6. Results stored in `ResultStore`, `ResultsView` renders
 
 ```
 User Action
@@ -86,12 +81,10 @@ User Action
           ▼
 ┌─────────────────────────────────────┐
 │  For each file:                     │
-│  1. CacheService.getIfFresh(path)   │
-│  2. If miss: computeSignature()     │
-│     - ContentExtractor.extract()    │
-│     - ExactHasher.hash()            │
-│     - MinHasher.compute()           │
-│  3. CacheService.setMany()          │
+│  1. ContentExtractor.extract()      │
+│  2. Count lines and filter          │
+│  3. ExactHasher.hash()              │
+│  4. MinHasher.compute()             │
 └─────────┬───────────────────────────┘
           │
           ▼
@@ -113,17 +106,16 @@ User Action
 ### Plugin entry (`src/main.ts`)
 
 The `DuplicateFinderPlugin` class:
-- Manages plugin lifecycle (`onload`, `onunload`)
+- Manages lifecycle (`onload`, `onunload`)
 - Registers commands and ribbon icon
 - Instantiates core services (`ScanService`, `ResultStore`)
 - Registers the custom view (`ResultsView`)
 
-```typescript
-// Key responsibilities
-- loadSettings() / saveSettings()
-- runScan() - orchestrates scan with progress modal
-- activateView() - opens/reveals results panel
-```
+Key responsibilities:
+- `loadSettings()` / `saveSettings()`
+- `runScan()` orchestrates scanning with `ProgressModal`
+- `activateView()` opens or reveals the results panel
+- `openSettings()` navigates to the plugin settings tab
 
 ### Type definitions (`src/types.ts`)
 
@@ -133,7 +125,6 @@ Central type definitions used across the codebase:
 |------|---------|
 | `DuplicateFinderSettings` | User configuration schema |
 | `DuplicatePair` | A detected duplicate pair with metadata |
-| `NoteSignature` | Cached signature (hash + minhash) for a note |
 | `ScanProgress` | Progress callback payload |
 | `ScanResult` | Final scan output |
 
@@ -141,9 +132,9 @@ Central type definitions used across the codebase:
 
 Orchestrates the entire scan process:
 - Filters files by `excludeFolders` and `excludePatterns`
-- Manages abort/cancel via `AbortController`
-- Coordinates caching, hashing, and comparison
-- Reports progress via callback
+- Manages cancel flow via `AbortController`
+- Coordinates content extraction, hashing, and comparison
+- Reports progress and timing via callback
 
 ```typescript
 class ScanService {
@@ -154,32 +145,17 @@ class ScanService {
 }
 ```
 
-### CacheService (`src/core/CacheService.ts`)
-
-IndexedDB-backed persistence for signatures:
-- Database: `duplicate-finder-cache`
-- Object store: `signatures` (keyed by file path)
-- Invalidation: compares stored `mtime` with current file `mtime`
-
-```typescript
-class CacheService {
-  getIfFresh(path: string, currentMtime: number): Promise<NoteSignature | null>
-  setMany(signatures: NoteSignature[]): Promise<void>
-  clear(): Promise<void>
-}
-```
-
 ### ResultStore (`src/core/ResultStore.ts`)
 
-In-memory store for scan results with query capabilities:
-- Sort by: similarity, created date, modified date, file size
-- Filter by: similarity range, detection method, folder
+In-memory store for scan results:
+- Sort by similarity, created date, modified date, or file size
+- Filter support by similarity range, method, and folder (UI currently uses sorting only)
 
 ```typescript
 class ResultStore {
   setResult(result: ScanResult): void
   getDuplicates(sortField, sortOrder, filters?): DuplicatePair[]
-  removeByPath(path: string): void  // Used after deletion
+  removeByPath(path: string): void
 }
 ```
 
@@ -188,7 +164,7 @@ class ResultStore {
 Prepares note content for comparison:
 - Removes YAML frontmatter
 - Normalizes line endings and whitespace
-- Returns clean content for hashing
+- Counts lines for `minContentLines`
 
 ### Similarity algorithms (`src/similarity/`)
 
@@ -204,20 +180,16 @@ class ExactHasher {
 #### MinHasher
 
 Locality-sensitive hashing for fuzzy matching:
-- Splits content into word-based shingles (default: 3 words)
-- Computes MinHash signature (default: 128 hash functions)
+- Splits content into word-based shingles (default: 5 words)
+- Computes MinHash signature (default: 64 hash functions)
 - Uses FNV-1a for shingle hashing + linear hash family
 
 ```typescript
 class MinHasher {
   compute(content: string): number[]  // Returns signature array
-  estimateSimilarity(sigA: number[], sigB: number[]): number  // Jaccard estimate
+  estimateSimilarity(sigA: number[], sigB: number[]): number
 }
 ```
-
-**Algorithm parameters** (configurable in settings):
-- `shingleSize`: Words per shingle (default: 3)
-- `numHashFunctions`: Signature length (default: 128)
 
 #### Comparator
 
@@ -242,19 +214,20 @@ class Comparator {
 #### ResultsView
 
 Custom Obsidian `ItemView` for the results panel:
-- Header with scan button and statistics
+- Header with scan button and stats
 - Sort controls (field + order toggle)
 - Card-based display of duplicate pairs
-- File links, metadata, age indicators
+- Folder link to reveal items in file explorer
+- Optional hint to hide a dominant folder from results
 - Delete button per file (triggers confirmation)
 
 #### ProgressModal
 
 Modal dialog during scan:
 - Phase indicator (reading/hashing/comparing)
-- Progress bar with percentage
-- Current file path
-- Cancel button
+- Progress bar with percentage and current file
+- Elapsed and estimated remaining time
+- Cancel and "Open settings" actions
 
 #### ConfirmDeleteModal
 
@@ -264,36 +237,34 @@ Confirmation dialog before file deletion:
 
 ## Settings
 
-Defined in `DuplicateFinderSettings` interface:
+Defined in `DuplicateFinderSettings`:
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
 | `similarityThreshold` | number | 0.9 | Minimum similarity (0-1) |
-| `minContentLength` | number | 50 | Skip notes shorter than this |
+| `minContentLines` | number | 100 | Skip notes shorter than this |
 | `excludeFolders` | string[] | [] | Folders to skip |
 | `excludePatterns` | string[] | [] | Regex patterns to exclude |
-| `cacheEnabled` | boolean | true | Enable IndexedDB caching |
-| `shingleSize` | number | 3 | Words per shingle |
-| `numHashFunctions` | number | 128 | MinHash signature size |
 
 ## Performance considerations
 
-- **O(n²) comparison**: The `Comparator` must compare all pairs. For large vaults (>10k notes), this can be slow.
-- **Caching**: Signatures are cached in IndexedDB and reused if file `mtime` unchanged.
-- **Progress reporting**: Reports every 50 comparisons to avoid UI blocking.
+- **O(n²) comparison**: `Comparator` compares all pairs. Large vaults can be slow.
+- **No persistent cache**: Signatures are recomputed every scan.
+- **In-memory content map**: File contents are read once and reused for hashing.
+- **Progress reporting**: Emits progress every 50 comparisons to keep UI responsive.
 - **Abort support**: `AbortController` allows cancellation at any point.
 
 ## Extension points
 
 ### Adding a new detection method
 
-1. Create new hasher in `src/similarity/` implementing signature generation
+1. Create a new hasher in `src/similarity/`
 2. Add detection method to `DetectionMethod` type in `types.ts`
 3. Integrate into `ScanService.computeSignature()` and `Comparator.findDuplicates()`
 
 ### Adding result filters
 
-1. Extend `FilterOptions` interface in `ResultStore.ts`
+1. Extend `FilterOptions` in `ResultStore.ts`
 2. Implement filter logic in `ResultStore.applyFilters()`
 3. Add UI controls in `ResultsView.renderSortControls()`
 

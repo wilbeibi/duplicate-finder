@@ -1,89 +1,50 @@
 # Duplicate Finder for Obsidian
 
-Find and manage duplicate notes in your Obsidian vault using exact matching and fuzzy similarity detection.
+Duplicate Finder helps you quickly spot and clean up duplicate notes in your Obsidian vault. It finds exact matches with SHA-256 and near-duplicates with MinHash similarity, then shows results in a dedicated sidebar so you can decide what to keep. Everything runs locally.
 
-## Features
+Use it when you import notes, merge folders, or notice repeated content. You can scan the whole vault, sort results, and remove extra copies with a confirmation step.
 
-- **Exact duplicate detection**: Finds notes with identical content using SHA-256 hashing
-- **Fuzzy duplicate detection**: Discovers similar notes using MinHash algorithm
-- **Results panel**: Browse duplicate pairs in a dedicated sidebar view
-- **Sort & filter**: Sort results by similarity, creation date, modified date, or file size
-- **Safe deletion**: Move duplicates to trash with confirmation dialog
-- **Progress tracking**: Visual progress bar with cancellation support
-- **Signature caching**: IndexedDB caching for faster rescans
+## Highlights
 
-## Installation
+- Exact and similar match detection in one scan
+- Sidebar results with sorting and clear match labels
+- Folder and pattern exclusions to keep scans focused
+- Safe deletion with a confirmation dialog
 
-### Manual installation
+## Trust and privacy
 
-1. Download `main.js`, `manifest.json`, and `styles.css` from the latest release
-2. Create folder: `<vault>/.obsidian/plugins/duplicate-finder/`
-3. Copy the downloaded files into the folder
-4. Reload Obsidian
-5. Enable the plugin in Settings → Community plugins
+- Runs locally inside Obsidian; no network calls
+- No telemetry or data collection
+- Scans only Markdown files in your vault
 
-## Usage
+## Install
 
-### Scan for duplicates
+1. Download `main.js`, `manifest.json`, and `styles.css` from the latest release.
+2. Create `<vault>/.obsidian/plugins/duplicate-finder/`.
+3. Copy the files into that folder.
+4. Reload Obsidian.
+5. Enable the plugin in **Settings → Community plugins**.
 
-- Click the ribbon icon (copy icon) in the left sidebar, or
-- Use command palette: "Duplicate Finder: Scan vault for duplicates"
+## Use
 
-### View results
+1. Click the ribbon icon (copy icon), or run **Duplicate Finder: Scan vault for duplicates**.
+2. Open **Duplicate Finder: Show duplicate finder results** to review matches.
+3. Select the trash icon to remove a duplicate.
 
-Results appear in a sidebar panel showing:
-- Similarity percentage badge
-- Match type (exact or similar)
-- File names with clickable links
-- File path, size, and creation date
-- Age indicator (older/newer)
+## WARNING: deletion risk
 
-### Delete duplicates
+**WARNING**: Moving a note to trash can cause data loss if you delete the wrong file. Confirm the file name and path before you delete.
 
-Click the trash icon next to any file to move it to trash. The other file in the pair will be kept.
+## Settings
 
-### Settings
+- **Similarity threshold**: Minimum similarity to treat notes as duplicates (50-100%).
+- **Minimum content lines**: Skip short notes.
+- **Excluded folders**: Skip entire folders.
+- **Excluded patterns**: Skip files that match regex patterns.
 
-Configure the plugin in Settings → Duplicate Finder:
+## Terms
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| Similarity threshold | Minimum similarity to consider as duplicate (50-100%) | 70% |
-| Minimum content length | Skip notes shorter than this (characters) | 50 |
-| Excluded folders | Folders to skip when scanning | (none) |
-| Excluded patterns | Regex patterns to exclude | (none) |
-| Enable cache | Cache signatures for faster rescans | Enabled |
-| Shingle size | Words per shingle for fuzzy matching | 3 |
-| Number of hash functions | MinHash signature size | 128 |
+- **Frontmatter**: The YAML block between `---` lines at the top of a note. It is removed before comparison.
+- **Exact match**: Notes with identical content after cleanup.
+- **Similar match**: Notes with high MinHash similarity.
 
-## How it works
-
-### Exact matching
-Notes are hashed using SHA-256. Identical hashes indicate exact duplicates.
-
-### Fuzzy matching
-The MinHash algorithm estimates Jaccard similarity between notes:
-1. Content is split into word-based shingles
-2. Each shingle is hashed using multiple hash functions
-3. The minimum hash value for each function forms the signature
-4. Signature overlap estimates content similarity
-
-## Limitations
-
-- Desktop only (v0.1)
-- Performance: O(n²) comparison for n notes
-- Recommended for vaults under 10,000 notes
-- YAML frontmatter is excluded from comparison
-
-## Development
-
-```bash
-npm install
-npm run dev     # Watch mode
-npm run build   # Production build
-npm test        # Run tests
-```
-
-## License
-
-MIT
