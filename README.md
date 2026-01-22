@@ -4,6 +4,9 @@ Duplicate Finder helps you quickly spot and clean up duplicate notes in your Obs
 
 Use it when you import notes, merge folders, or notice repeated content. You can scan the whole vault, sort results, and remove extra copies with a confirmation step.
 
+
+<img width="519" height="438" alt="Screenshot 2026-01-22 at 8 56 05 AM" src="https://github.com/user-attachments/assets/00065b5b-51a6-4eb7-8d8d-1a1ec0f2f097" />
+
 ## Highlights
 
 - Exact and similar match detection in one scan
