@@ -37,6 +37,7 @@ export class ScanService {
     this.abortController = new AbortController();
     try {
       const startTime = Date.now();
+      const readingStartTime = Date.now();
       
       // Phase 1: File Discovery
       const fileDiscoveryStart = Date.now();
@@ -48,12 +49,12 @@ export class ScanService {
       let signatureComputingMs = 0;
       
       onProgress?.({
-      phase: 'reading',
-      current: 0,
-      total: files.length,
+        phase: 'reading',
+        current: 0,
+        total: files.length,
         timing: {
-          phaseStartTime: Date.now(),
-          totalElapsed: Date.now() - startTime,
+          phaseStartTime: readingStartTime,
+          totalElapsed: 0,
         },
       });
       
@@ -61,14 +62,39 @@ export class ScanService {
       
       const contentCache = new Map<string, string>();
       
-      for (const file of files) {
+      for (let i = 0; i < files.length; i++) {
         if (this.abortController.signal.aborted) {
           return this.buildResult([], 0, 0, startTime, true);
         }
-        const rawContent = await this.app.vault.cachedRead(file);
-        const content = this.extractor.extract(rawContent);
-        contentCache.set(file.path, content);
+
+        const file = files[i]!;
+
+        // Progress updates for large vaults; keep UI responsive without spamming.
+        if (i === 0 || i % 20 === 0 || i === files.length - 1) {
+          const elapsed = Date.now() - startTime;
+          onProgress?.({
+            phase: 'reading',
+            current: i,
+            total: files.length,
+            currentFile: file.path,
+            timing: {
+              phaseStartTime: readingStartTime,
+              totalElapsed: elapsed,
+              estimatedRemaining: this.estimateRemainingTime(i, files.length, elapsed),
+            },
+          });
+        }
+
+        try {
+          const rawContent = await this.app.vault.cachedRead(file);
+          const content = this.extractor.extract(rawContent);
+          contentCache.set(file.path, content);
+        } catch (error) {
+          console.error(`Error reading ${file.path}:`, error);
+          skippedCount++;
+        }
       }
+      contentReadingMs = Date.now() - readingStartTime;
       
       const signatures = new Map<string, { contentHash: string; minhash: number[]; }>;
       
@@ -117,10 +143,11 @@ export class ScanService {
 
       
       const comparingStart = Date.now();
+      const compareTotal = (signatures.size * (signatures.size - 1)) / 2;
       onProgress?.({
         phase: 'comparing',
         current: 0,
-        total: signatures.size,
+        total: compareTotal,
         timing: {
           phaseStartTime: comparingStart,
           totalElapsed: Date.now() - startTime,
