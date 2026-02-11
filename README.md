@@ -22,20 +22,20 @@ Use it when you import notes, merge folders, or notice repeated content. You can
 
 ## Install
 
+### Install with BRAT
+
+1. Install **BRAT** in **Settings → Community plugins**.
+2. Open the command palette and run **BRAT: Add a beta plugin for testing**.
+3. Enter `wilbeibi/duplicate-finder`.
+4. Select **Add plugin**, then enable **Duplicate Finder** in **Settings → Community plugins**.
+
+### Manual install
+
 1. Download `main.js`, `manifest.json`, and `styles.css` from the latest release.
 2. Create `<vault>/.obsidian/plugins/duplicate-finder/`.
 3. Copy the files into that folder.
 4. Reload Obsidian.
 5. Enable the plugin in **Settings → Community plugins**.
-
-### Install with BRAT
-
-1. Install **BRAT** in **Settings → Community plugins**.
-2. Open the command palette and run **BRAT: Add a beta plugin for testing**.
-3. Enter the repository in the format `owner/repo` (for example, `wilbeibi/duplicate-finder`).
-4. Select **Add plugin** and wait for BRAT to finish.
-5. Refresh the plugin list in **Settings → Community plugins**.
-6. Enable **Duplicate Finder**.
 
 ## Use
 
