@@ -41,7 +41,8 @@ export class ResultsView extends ItemView {
   }
 
   render(): void {
-    const container = this.containerEl.children[1] as HTMLElement;
+    // Use stable ItemView API instead of depending on internal containerEl structure.
+    const container = this.contentEl;
     container.empty();
     container.addClass('duplicate-finder-view');
     

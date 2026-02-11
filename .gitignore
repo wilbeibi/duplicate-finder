@@ -18,6 +18,12 @@ main.js
 # obsidian
 data.json
 
+# Ignore accidental build output emitted into src/
+src/**/*.js
+src/**/*.js.map
+src/**/*.d.ts
+src/**/*.d.ts.map
+
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
 

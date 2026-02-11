@@ -4,10 +4,21 @@ import type DuplicateFinderPlugin from "./main";
 
 export class DuplicateFinderSettingsTab extends PluginSettingTab {
 	plugin: DuplicateFinderPlugin;
+	private saveTimer: number | null = null;
 
 	constructor(app: App, plugin: DuplicateFinderPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
+	}
+
+	private scheduleSave(): void {
+		if (this.saveTimer !== null) {
+			window.clearTimeout(this.saveTimer);
+		}
+		this.saveTimer = window.setTimeout(() => {
+			this.saveTimer = null;
+			void this.plugin.saveSettings();
+		}, 400);
 	}
 
 	display(): void {
@@ -34,9 +45,9 @@ export class DuplicateFinderSettingsTab extends PluginSettingTab {
 				.setLimits(50, 100, 5)
 				.setValue(this.plugin.settings.similarityThreshold * 100)
 				.setDynamicTooltip()
-				.onChange(async (value) => {
+				.onChange((value) => {
 					this.plugin.settings.similarityThreshold = value / 100;
-					await this.plugin.saveSettings();
+					this.scheduleSave();
 				})
 			);
 
@@ -46,11 +57,11 @@ export class DuplicateFinderSettingsTab extends PluginSettingTab {
 			.addText(text => text
 				.setPlaceholder('100')
 				.setValue(String(this.plugin.settings.minContentLines))
-				.onChange(async (value) => {
+				.onChange((value) => {
 					const num = parseInt(value, 10);
 					if (!isNaN(num) && num >= 0) {
 						this.plugin.settings.minContentLines = num;
-						await this.plugin.saveSettings();
+						this.scheduleSave();
 					}
 				})
 			);
@@ -61,12 +72,12 @@ export class DuplicateFinderSettingsTab extends PluginSettingTab {
 			.addTextArea(text => text
 				.setPlaceholder('templates\narchive\ndaily')
 				.setValue(this.plugin.settings.excludeFolders.join('\n'))
-				.onChange(async (value) => {
+				.onChange((value) => {
 					this.plugin.settings.excludeFolders = value
 						.split('\n')
 						.map(s => s.trim())
 						.filter(s => s.length > 0);
-					await this.plugin.saveSettings();
+					this.scheduleSave();
 				})
 			);
 
@@ -76,12 +87,12 @@ export class DuplicateFinderSettingsTab extends PluginSettingTab {
 			.addTextArea(text => text
 				.setPlaceholder('^daily/.*\n\\.excalidraw$')
 				.setValue(this.plugin.settings.excludePatterns.join('\n'))
-				.onChange(async (value) => {
+				.onChange((value) => {
 					this.plugin.settings.excludePatterns = value
 						.split('\n')
 						.map(s => s.trim())
 						.filter(s => s.length > 0);
-					await this.plugin.saveSettings();
+					this.scheduleSave();
 				})
 			);
 	}
