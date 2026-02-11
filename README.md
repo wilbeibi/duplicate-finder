@@ -28,6 +28,15 @@ Use it when you import notes, merge folders, or notice repeated content. You can
 4. Reload Obsidian.
 5. Enable the plugin in **Settings → Community plugins**.
 
+### Install with BRAT
+
+1. Install **BRAT** in **Settings → Community plugins**.
+2. Open the command palette and run **BRAT: Add a beta plugin for testing**.
+3. Enter the repository in the format `owner/repo` (for example, `wilbeibi/duplicate-finder`).
+4. Select **Add plugin** and wait for BRAT to finish.
+5. Refresh the plugin list in **Settings → Community plugins**.
+6. Enable **Duplicate Finder**.
+
 ## Use
 
 1. Click the ribbon icon (copy icon), or run **Duplicate Finder: Scan vault for duplicates**.
@@ -50,4 +59,3 @@ Use it when you import notes, merge folders, or notice repeated content. You can
 - **Frontmatter**: The YAML block between `---` lines at the top of a note. It is removed before comparison.
 - **Exact match**: Notes with identical content after cleanup.
 - **Similar match**: Notes with high MinHash similarity.
-

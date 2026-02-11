@@ -1,7 +1,7 @@
 {
 	"id": "duplicate-finder",
 	"name": "Duplicate Finder",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"minAppVersion": "0.15.0",
 	"description": "Find and manage duplicate notes in your vault using exact and fuzzy matching.",
 	"author": "Yggdrasil",
