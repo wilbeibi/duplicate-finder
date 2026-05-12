@@ -77,7 +77,8 @@ export default class DuplicateFinderPlugin extends Plugin {
 			});
 			
 			this.resultStore.setResult(result);
-			
+			progressModal.close();
+
 			await this.activateView();
 			
 			if (result.duplicates.length > 0) {

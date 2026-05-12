@@ -71,18 +71,37 @@ export class ResultsView extends ItemView {
     if (result) {
       const statsRow = header.createDiv({ cls: 'df-stats-row' });
       
-      statsRow.createSpan({ 
-        text: `${result.duplicates.length} duplicate pairs found`,
+      const ignoredCount = result.duplicates.filter(
+        p => this.plugin.settings.ignoredPairIds.includes(p.id)
+      ).length;
+      const visibleCount = result.duplicates.length - ignoredCount;
+
+      statsRow.createSpan({
+        text: `${visibleCount} duplicate pairs found`,
         cls: 'df-stat'
       });
-      statsRow.createSpan({ 
+      statsRow.createSpan({
         text: `${result.scannedCount} notes scanned`,
         cls: 'df-stat'
       });
-      statsRow.createSpan({ 
+      statsRow.createSpan({
         text: `${(result.durationMs / 1000).toFixed(1)}s`,
         cls: 'df-stat'
       });
+
+      if (ignoredCount > 0) {
+        const ignoredLink = statsRow.createEl('a', {
+          text: `${ignoredCount} ignored`,
+          cls: 'df-stat df-stat-link',
+          href: '#'
+        });
+        ignoredLink.addEventListener('click', async (e) => {
+          e.preventDefault();
+          this.plugin.settings.ignoredPairIds = [];
+          await this.plugin.saveSettings();
+          this.render();
+        });
+      }
       
       // Display detailed timing if available
       if (result.timing) {
@@ -224,10 +243,10 @@ export class ResultsView extends ItemView {
 
     // Filter duplicates
     const displayDuplicates = allDuplicates.filter(pair => {
+      if (this.plugin.settings.ignoredPairIds.includes(pair.id)) return false;
       if (!this.hiddenFolder) return true;
       const pathA = pair.fileA.parent?.path ?? '/';
       const pathB = pair.fileB.parent?.path ?? '/';
-      // Hide if BOTH files are in the hidden folder
       return !(pathA === this.hiddenFolder && pathB === this.hiddenFolder);
     });
     
@@ -248,7 +267,14 @@ export class ResultsView extends ItemView {
     
     const methodLabel = cardHeader.createSpan({ cls: 'df-method-label' });
     methodLabel.setText(pair.method === 'exact' ? 'Exact match' : 'Similar content');
-    
+
+    const ignoreBtn = cardHeader.createEl('button', {
+      cls: 'df-ignore-btn',
+      attr: { 'aria-label': 'Ignore this pair' }
+    });
+    ignoreBtn.setText('Ignore');
+    ignoreBtn.addEventListener('click', () => this.ignorePair(pair.id));
+
     const filesContainer = card.createDiv({ cls: 'df-files' });
     
     this.renderFileEntry(filesContainer, pair, 'A');
@@ -307,6 +333,14 @@ export class ResultsView extends ItemView {
     deleteBtn.addEventListener('click', () => {
       this.confirmDelete(file, otherFile);
     });
+  }
+
+  private async ignorePair(pairId: string): Promise<void> {
+    if (!this.plugin.settings.ignoredPairIds.includes(pairId)) {
+      this.plugin.settings.ignoredPairIds.push(pairId);
+      await this.plugin.saveSettings();
+    }
+    this.render();
   }
 
   private confirmDelete(file: TFile, otherFile: TFile): void {

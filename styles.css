@@ -248,6 +248,33 @@
   cursor: pointer;
 }
 
+.df-stat-link {
+  color: var(--text-accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.df-stat-link:hover {
+  color: var(--text-accent-hover);
+}
+
+.df-ignore-btn {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--background-modifier-border);
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.df-ignore-btn:hover {
+  color: var(--text-normal);
+  border-color: var(--text-muted);
+}
+
 .df-file-actions {
   display: flex;
   align-items: center;

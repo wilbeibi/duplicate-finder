@@ -65,9 +65,9 @@ export class ProgressModal extends Modal {
     if (!this.progressEl || !this.phaseEl || !this.barEl) return;
 
     const phaseLabels: Record<string, string> = {
-      reading: 'Reading files...',
-      hashing: 'Computing signatures...',
-      comparing: 'Finding duplicates...',
+      reading: 'Step 1/3 — Reading files...',
+      hashing: 'Step 2/3 — Computing signatures...',
+      comparing: 'Step 3/3 — Finding duplicates...',
       complete: 'Complete!',
       cancelled: 'Cancelled',
     };
@@ -75,7 +75,7 @@ export class ProgressModal extends Modal {
     this.phaseEl.setText(phaseLabels[progress.phase] ?? progress.phase);
     this.progressEl.setText(`${progress.current} / ${progress.total}`);
 
-    const pct = progress.total > 0 ? (progress.current / progress.total) * 100 : 0;
+    const pct = this.computeOverallProgress(progress.phase, progress.current, progress.total);
     this.barEl.style.width = `${pct}%`;
 
     if (progress.currentFile && this.fileEl) {
@@ -105,6 +105,17 @@ export class ProgressModal extends Modal {
     }
   }
   
+  private computeOverallProgress(phase: string, current: number, total: number): number {
+    const frac = total > 0 ? current / total : 0;
+    switch (phase) {
+      case 'reading':   return frac * 30;
+      case 'hashing':   return 30 + frac * 30;
+      case 'comparing': return 60 + frac * 40;
+      case 'complete':  return 100;
+      default:          return 0;
+    }
+  }
+
   private formatTime(ms: number): string {
     if (ms < 1000) return `${ms}ms`;
     if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
