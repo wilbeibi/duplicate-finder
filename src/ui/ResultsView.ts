@@ -346,7 +346,7 @@ export class ResultsView extends ItemView {
   private confirmDelete(file: TFile, otherFile: TFile): void {
     new ConfirmDeleteModal(this.app, file, otherFile, async () => {
       try {
-        await this.app.vault.trash(file, true);
+        await this.app.fileManager.trashFile(file);
         this.resultStore.removeByPath(file.path);
         new Notice(`Moved "${file.basename}" to trash`);
         this.render();

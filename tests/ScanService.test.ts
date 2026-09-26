@@ -115,4 +115,28 @@ describe('scanning a vault', () => {
     expect(result.duplicates).toEqual([]);
     expect(service.isRunning()).toBe(false);
   });
+
+  it('discards partial results when cancelled during comparison', async () => {
+    const body = note('alpha');
+    const service = new ScanService(fakeApp({ 'a.md': body, 'b.md': body }), settings());
+
+    const result = await service.scan(progress => {
+      if (progress.phase === 'comparing') service.cancel();
+    });
+
+    expect(result.duplicates).toEqual([]);
+  });
+
+  it('stays running after cancel until the scan has actually stopped', async () => {
+    const body = note('alpha');
+    const service = new ScanService(fakeApp({ 'a.md': body, 'b.md': body }), settings());
+
+    const scan = service.scan();
+    service.cancel();
+    const runningAfterCancel = service.isRunning();
+    await scan;
+
+    expect(runningAfterCancel).toBe(true);
+    expect(service.isRunning()).toBe(false);
+  });
 });

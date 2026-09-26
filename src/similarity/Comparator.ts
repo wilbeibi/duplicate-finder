@@ -57,10 +57,16 @@ export class Comparator {
     const totalComparisons = (entries.length * (entries.length - 1)) / 2;
     const comparisonStartTime = Date.now();
     let slowComparisons = 0;
+    let lastYield = Date.now();
     
     console.log(`🔍 Starting ${totalComparisons.toLocaleString()} comparisons...`);
     
     for (let i = 0; i < entries.length; i++) {
+      // Yield periodically so the progress modal repaints and Cancel is handled.
+      if (Date.now() - lastYield > 50) {
+        await new Promise(resolve => window.setTimeout(resolve, 0));
+        lastYield = Date.now();
+      }
       if (abortSignal.aborted) {
         break;
       }

@@ -166,6 +166,9 @@ export class ScanService {
         this.abortController.signal,
         onProgress
       );
+      if (this.abortController.signal.aborted) {
+        return this.buildResult([], signatures.size, skippedCount, startTime, true);
+      }
       
       const duplicateComparingMs = Date.now() - comparingStart;
       console.log(`⚙️ Comparison phase completed: ${duplicateComparingMs}ms for ${duplicates.length} duplicate pairs`);
@@ -207,8 +210,10 @@ export class ScanService {
     this.abortController?.abort();
   }
 
+  // A cancelled scan still counts as running until it has unwound, so a new
+  // scan cannot start and share the abort controller with it.
   isRunning(): boolean {
-    return this.abortController !== null && !this.abortController.signal.aborted;
+    return this.abortController !== null;
   }
 
   updateSettings(settings: DuplicateFinderSettings): void {

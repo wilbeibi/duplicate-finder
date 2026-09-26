@@ -51,7 +51,6 @@ export default class DuplicateFinderPlugin extends Plugin {
 
 	onunload() {
 		console.log('Unloading Duplicate Finder plugin');
-		this.app.workspace.detachLeavesOfType(RESULTS_VIEW_TYPE);
 	}
 
 	async runScan(): Promise<void> {
@@ -107,9 +106,11 @@ export default class DuplicateFinderPlugin extends Plugin {
 		}
 		
 		if (leaf) {
-			workspace.revealLeaf(leaf);
-			const view = leaf.view as ResultsView;
-			view.render();
+			// revealLeaf loads a deferred view; before that, leaf.view is a placeholder.
+			await workspace.revealLeaf(leaf);
+			if (leaf.view instanceof ResultsView) {
+				leaf.view.render();
+			}
 		}
 	}
 
