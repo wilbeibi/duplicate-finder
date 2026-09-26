@@ -1,4 +1,4 @@
-import { DEFAULT_SHINGLE_SIZE, DEFAULT_NUM_HASHES } from './constants';
+import { DEFAULT_SHINGLE_SIZE, DEFAULT_NUM_HASHES, DEFAULT_MINHASH_SEED } from './constants';
 
 export class MinHasher {
   private readonly shingleSize: number;
@@ -7,16 +7,19 @@ export class MinHasher {
 
   constructor(
     shingleSize: number = DEFAULT_SHINGLE_SIZE,
-    numHashes: number = DEFAULT_NUM_HASHES
+    numHashes: number = DEFAULT_NUM_HASHES,
+    seed: number = DEFAULT_MINHASH_SEED
   ) {
     this.shingleSize = shingleSize;
     this.numHashes = numHashes;
     
+    // Fixed seed keeps signatures reproducible and comparable across instances.
+    const nextUint32 = this.mulberry32(seed);
     this.hashCoefficients = [];
     for (let i = 0; i < numHashes; i++) {
       this.hashCoefficients.push({
-        a: this.randomUint32(),
-        b: this.randomUint32(),
+        a: nextUint32(),
+        b: nextUint32(),
       });
     }
   }
@@ -109,7 +112,14 @@ export class MinHasher {
     return Number(result);
   }
 
-  private randomUint32(): number {
-    return Math.floor(Math.random() * 0x100000000);
+  private mulberry32(seed: number): () => number {
+    let state = seed >>> 0;
+    return () => {
+      state = (state + 0x6d2b79f5) >>> 0;
+      let t = state;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return (t ^ (t >>> 14)) >>> 0;
+    };
   }
 }

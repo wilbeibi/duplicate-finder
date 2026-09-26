@@ -3,6 +3,7 @@
 		"baseUrl": "src",
 		"inlineSourceMap": true,
 		"inlineSources": true,
+		"noEmit": true,
 		"module": "ESNext",
 		"target": "ES6",
 		"allowJs": true,

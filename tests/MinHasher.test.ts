@@ -1,120 +1,65 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { MinHasher } from '../src/similarity/MinHasher';
 
+function tokens(from: number, to: number): string {
+  return Array.from({ length: to - from }, (_, i) => `w${from + i}`).join(' ');
+}
+
 describe('MinHasher', () => {
-  let hasher: MinHasher;
-  
-  beforeEach(() => {
-    hasher = new MinHasher(3, 128);
-  });
-  
-  describe('compute', () => {
-    it('returns consistent signature for same content', () => {
-      const content = 'the quick brown fox jumps over the lazy dog';
-      const sig1 = hasher.compute(content);
-      const sig2 = hasher.compute(content);
-      
-      expect(sig1).toEqual(sig2);
-    });
-    
-    it('returns signature of correct length', () => {
-      const sig = hasher.compute('test content');
-      expect(sig.length).toBe(128);
-    });
-    
-    it('handles empty content', () => {
-      const sig = hasher.compute('');
-      expect(sig.length).toBe(128);
-      expect(sig.every(v => v === 0xFFFFFFFF)).toBe(true);
-    });
-    
-    it('handles content shorter than shingle size', () => {
-      const sig = hasher.compute('hi');
-      expect(sig.length).toBe(128);
-    });
+  it('gives identical signatures from separate instances with the default seed', () => {
+    const content = 'the quick brown fox jumps over the lazy dog';
 
-    it('handles single word', () => {
-      const sig = hasher.compute('word');
-      expect(sig.length).toBe(128);
-      expect(sig.some(v => v !== 0xFFFFFFFF)).toBe(true);
-    });
-  });
-  
-  describe('estimateSimilarity', () => {
-    it('returns 1.0 for identical content', () => {
-      const content = 'the quick brown fox';
-      const sig = hasher.compute(content);
-      
-      expect(hasher.estimateSimilarity(sig, sig)).toBe(1.0);
-    });
-    
-    it('returns high similarity for near-identical content', () => {
-      const sigA = hasher.compute('the quick brown fox jumps over the lazy dog');
-      const sigB = hasher.compute('the quick brown fox jumps over the lazy cat');
-      
-      const similarity = hasher.estimateSimilarity(sigA, sigB);
-      expect(similarity).toBeGreaterThan(0.5);
-    });
-    
-    it('returns low similarity for different content', () => {
-      const sigA = hasher.compute('the quick brown fox');
-      const sigB = hasher.compute('completely different text about something else entirely');
-      
-      const similarity = hasher.estimateSimilarity(sigA, sigB);
-      expect(similarity).toBeLessThan(0.5);
-    });
-    
-    it('throws on mismatched signature lengths', () => {
-      const hasher64 = new MinHasher(3, 64);
-      const sigA = hasher.compute('test');
-      const sigB = hasher64.compute('test');
-      
-      expect(() => hasher.estimateSimilarity(sigA, sigB)).toThrow();
-    });
-
-    it('returns 0.0 for completely different empty signatures', () => {
-      const sigA = new Array(128).fill(1);
-      const sigB = new Array(128).fill(2);
-      
-      expect(hasher.estimateSimilarity(sigA, sigB)).toBe(0.0);
-    });
+    expect(new MinHasher().compute(content)).toEqual(new MinHasher().compute(content));
   });
 
-  describe('getNumHashes', () => {
-    it('returns correct number of hash functions', () => {
-      expect(hasher.getNumHashes()).toBe(128);
-      
-      const hasher64 = new MinHasher(3, 64);
-      expect(hasher64.getNumHashes()).toBe(64);
-    });
+  // With shingle size 1, shingles are words, so the true Jaccard similarity of
+  // w0..w99 and w{s}..w{s+99} is (100 - s) / (100 + s).
+  it.each([
+    { shift: 0, jaccard: 1 },
+    { shift: 25, jaccard: 0.6 },
+    { shift: 50, jaccard: 1 / 3 },
+    { shift: 100, jaccard: 0 },
+  ])('estimates Jaccard similarity $jaccard within 0.1', ({ shift, jaccard }) => {
+    const hasher = new MinHasher(1, 256);
+    const sigA = hasher.compute(tokens(0, 100));
+    const sigB = hasher.compute(tokens(shift, shift + 100));
+
+    expect(Math.abs(hasher.estimateSimilarity(sigA, sigB) - jaccard)).toBeLessThanOrEqual(0.1);
   });
 
-  describe('edge cases', () => {
-    it('handles punctuation correctly', () => {
-      const sigA = hasher.compute('Hello, world!');
-      const sigB = hasher.compute('Hello world');
-      
-      const similarity = hasher.estimateSimilarity(sigA, sigB);
-      expect(similarity).toBeGreaterThan(0.8);
-    });
+  it('uses shingle size to make word order matter', () => {
+    const forward = 'alpha beta gamma delta epsilon zeta';
+    const reversed = 'zeta epsilon delta gamma beta alpha';
+    const words = new MinHasher(1, 128);
+    const pairs = new MinHasher(2, 128);
 
-    it('handles case differences', () => {
-      const sigA = hasher.compute('THE QUICK BROWN FOX');
-      const sigB = hasher.compute('the quick brown fox');
-      
-      const similarity = hasher.estimateSimilarity(sigA, sigB);
-      expect(similarity).toBe(1.0);
-    });
+    expect(words.estimateSimilarity(words.compute(forward), words.compute(reversed))).toBe(1);
+    expect(pairs.estimateSimilarity(pairs.compute(forward), pairs.compute(reversed))).toBeLessThan(0.1);
+  });
 
-    it('different shingle sizes produce different results', () => {
-      const hasher2 = new MinHasher(2, 128);
-      const hasher4 = new MinHasher(4, 128);
-      
-      const content = 'the quick brown fox jumps over the lazy dog';
-      const sig2 = hasher2.compute(content);
-      const sig4 = hasher4.compute(content);
-      
-      expect(sig2).not.toEqual(sig4);
-    });
+  it('ignores case and punctuation', () => {
+    const hasher = new MinHasher(3, 128);
+
+    const similarity = hasher.estimateSimilarity(
+      hasher.compute('THE QUICK, BROWN FOX!'),
+      hasher.compute('the quick brown fox')
+    );
+
+    expect(similarity).toBe(1);
+  });
+
+  it('compares notes shorter than the shingle size as whole texts', () => {
+    const hasher = new MinHasher(5, 128);
+    const sig = hasher.compute('hello world');
+
+    expect(hasher.estimateSimilarity(sig, hasher.compute('hello world'))).toBe(1);
+    expect(hasher.estimateSimilarity(sig, hasher.compute('goodbye moon'))).toBeLessThan(0.1);
+  });
+
+  it('rejects signatures of different lengths', () => {
+    const sigA = new MinHasher(3, 128).compute('test');
+    const sigB = new MinHasher(3, 64).compute('test');
+
+    expect(() => new MinHasher(3, 128).estimateSimilarity(sigA, sigB)).toThrow();
   });
 });

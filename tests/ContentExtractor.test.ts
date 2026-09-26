@@ -38,6 +38,19 @@ This is the content.`;
       const content = '  \n  Content  \n  ';
       expect(extractor.extract(content)).toBe('Content');
     });
+
+    it('removes frontmatter with CRLF line endings', () => {
+      expect(extractor.extract('---\r\ntitle: Test\r\n---\r\nBody')).toBe('Body');
+    });
+
+    it('keeps a horizontal rule in the middle of a note', () => {
+      const content = 'Intro\n\n---\n\nMore\n\n---\n\nEnd';
+      expect(extractor.extract(content)).toBe(content);
+    });
+
+    it('returns empty text for a note that is only frontmatter', () => {
+      expect(extractor.extract('---\ntitle: Test\n---\n')).toBe('');
+    });
   });
 
   describe('countLines', () => {
