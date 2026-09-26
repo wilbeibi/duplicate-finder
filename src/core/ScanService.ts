@@ -99,6 +99,10 @@ export class ScanService {
       const signatures = new Map<string, { contentHash: string; minhash: number[]; }>;
       
       for (let i = 0; i < files.length; i++) {
+        // Hashing is synchronous; yield so the progress modal repaints and Cancel is handled.
+        if (i % 20 === 0) {
+          await new Promise(resolve => window.setTimeout(resolve, 0));
+        }
         if (this.abortController.signal.aborted) {
           return this.buildResult([], signatures.size, skippedCount, startTime, true);
         }
