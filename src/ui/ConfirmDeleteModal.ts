@@ -3,9 +3,9 @@ import { Modal, App, TFile } from 'obsidian';
 export class ConfirmDeleteModal extends Modal {
   private file: TFile;
   private otherFile: TFile;
-  private onConfirm: () => void;
+  private onConfirm: () => Promise<void>;
 
-  constructor(app: App, file: TFile, otherFile: TFile, onConfirm: () => void) {
+  constructor(app: App, file: TFile, otherFile: TFile, onConfirm: () => Promise<void>) {
     super(app);
     this.file = file;
     this.otherFile = otherFile;
@@ -16,7 +16,7 @@ export class ConfirmDeleteModal extends Modal {
     const { contentEl } = this;
     contentEl.addClass('df-confirm-modal');
 
-    contentEl.createEl('h3', { text: 'Move to Trash?' });
+    contentEl.createEl('h3', { text: 'Move to trash?' });
 
     const fileInfo = contentEl.createDiv({ cls: 'df-confirm-file' });
     fileInfo.createEl('strong', { text: this.file.basename });
@@ -31,11 +31,11 @@ export class ConfirmDeleteModal extends Modal {
     cancelBtn.addEventListener('click', () => this.close());
 
     const deleteBtn = buttons.createEl('button', {
-      text: 'Move to Trash',
+      text: 'Move to trash',
       cls: 'mod-warning',
     });
     deleteBtn.addEventListener('click', () => {
-      this.onConfirm();
+      void this.onConfirm();
       this.close();
     });
   }

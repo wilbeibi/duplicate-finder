@@ -1,5 +1,4 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
-import { DuplicateFinderSettings, DEFAULT_SETTINGS } from "./types";
 import type DuplicateFinderPlugin from "./main";
 
 export class DuplicateFinderSettingsTab extends PluginSettingTab {
@@ -24,8 +23,6 @@ export class DuplicateFinderSettingsTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-
-		containerEl.createEl('h2', { text: 'Duplicate Finder Settings' });
 
 		new Setting(containerEl)
 			.setName('Scan for duplicates')
@@ -70,6 +67,7 @@ export class DuplicateFinderSettingsTab extends PluginSettingTab {
 			.setName('Excluded folders')
 			.setDesc('Folders to skip when scanning (one per line)')
 			.addTextArea(text => text
+				// eslint-disable-next-line obsidianmd/ui/sentence-case -- folder path examples, not prose
 				.setPlaceholder('templates\narchive\ndaily')
 				.setValue(this.plugin.settings.excludeFolders.join('\n'))
 				.onChange((value) => {
@@ -85,6 +83,7 @@ export class DuplicateFinderSettingsTab extends PluginSettingTab {
 			.setName('Excluded patterns')
 			.setDesc('Regex patterns to exclude (one per line)')
 			.addTextArea(text => text
+				// eslint-disable-next-line obsidianmd/ui/sentence-case -- regex examples, not prose
 				.setPlaceholder('^daily/.*\n\\.excalidraw$')
 				.setValue(this.plugin.settings.excludePatterns.join('\n'))
 				.onChange((value) => {

@@ -56,10 +56,7 @@ export class Comparator {
     let comparisons = 0;
     const totalComparisons = (entries.length * (entries.length - 1)) / 2;
     const comparisonStartTime = Date.now();
-    let slowComparisons = 0;
     let lastYield = Date.now();
-    
-    console.log(`🔍 Starting ${totalComparisons.toLocaleString()} comparisons...`);
     
     for (let i = 0; i < entries.length; i++) {
       // Yield periodically so the progress modal repaints and Cancel is handled.
@@ -82,19 +79,10 @@ export class Comparator {
           continue;
         }
         
-        const compStart = Date.now();
         const similarity = minHasher.estimateSimilarity(
           sigA.minhash,
           sigB.minhash
         );
-        const compTime = Date.now() - compStart;
-        
-        if (compTime > 10) {
-          slowComparisons++;
-          if (slowComparisons <= 5) { // Only log first 5 slow comparisons
-            console.log(`⚠️ Slow comparison: ${pathA} vs ${pathB} took ${compTime}ms`);
-          }
-        }
         
         if (similarity >= this.threshold) {
           const pair = this.createPair(
@@ -127,13 +115,6 @@ export class Comparator {
           },
         });
       }
-    }
-    
-    const totalComparisonTime = Date.now() - comparisonStartTime;
-    console.log(`⚙️ Comparison completed: ${totalComparisonTime}ms for ${comparisons.toLocaleString()} comparisons`);
-    console.log(`  Average: ${(totalComparisonTime / comparisons).toFixed(4)}ms/comparison`);
-    if (slowComparisons > 0) {
-      console.log(`  ⚠️ Slow comparisons detected: ${slowComparisons}`);
     }
     
     return duplicates;

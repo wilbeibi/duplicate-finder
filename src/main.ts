@@ -20,8 +20,6 @@ export default class DuplicateFinderPlugin extends Plugin {
 	resultStore: ResultStore;
 
 	async onload() {
-		console.log('Loading Duplicate Finder plugin');
-		
 		await this.loadSettings();
 		
 		this.resultStore = new ResultStore();
@@ -40,17 +38,13 @@ export default class DuplicateFinderPlugin extends Plugin {
 		
 		this.addCommand({
 			id: 'show-results',
-			name: 'Show duplicate finder results',
+			name: 'Show results',
 			callback: () => this.activateView(),
 		});
 		
 		this.addSettingTab(new DuplicateFinderSettingsTab(this.app, this));
 		
 		this.addRibbonIcon('copy', 'Scan for duplicates', () => this.runScan());
-	}
-
-	onunload() {
-		console.log('Unloading Duplicate Finder plugin');
 	}
 
 	async runScan(): Promise<void> {
@@ -121,7 +115,8 @@ export default class DuplicateFinderPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const saved = await this.loadData() as Partial<DuplicateFinderSettings> | null;
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, saved);
 	}
 
 	async saveSettings() {

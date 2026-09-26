@@ -1,6 +1,7 @@
 import { App, TFile } from 'obsidian';
 import type {
   DuplicateFinderSettings,
+  DuplicatePair,
   ScanResult,
   ScanProgressCallback
 } from '../types';
@@ -57,8 +58,6 @@ export class ScanService {
           totalElapsed: 0,
         },
       });
-      
-      console.log(`📁 File Discovery: ${fileDiscoveryMs}ms for ${files.length} files`);
       
       const contentCache = new Map<string, string>();
       
@@ -133,11 +132,6 @@ export class ScanService {
           } else {
             skippedCount++;
           }
-          
-          // Log slow files for analysis
-          if (fileProcessTime > 100) {
-            console.log(`⚠️ Slow file processing: ${file.path} took ${fileProcessTime}ms`);
-          }
         } catch (error) {
           console.error(`Error processing ${file.path}:`, error);
           skippedCount++;
@@ -158,8 +152,6 @@ export class ScanService {
         },
       });
       
-      console.log(`📊 Starting comparison phase: ${signatures.size} files to compare`);
-      
       const duplicates = await this.comparator.findDuplicates(
         signatures,
         (path: string) => this.app.vault.getAbstractFileByPath(path) as TFile | null,
@@ -171,7 +163,6 @@ export class ScanService {
       }
       
       const duplicateComparingMs = Date.now() - comparingStart;
-      console.log(`⚙️ Comparison phase completed: ${duplicateComparingMs}ms for ${duplicates.length} duplicate pairs`);
       
       onProgress?.({
         phase: 'complete',
@@ -192,13 +183,6 @@ export class ScanService {
         averageComparisonMs,
         totalComparisons,
       };
-      
-      console.log(`📊 Performance Summary:`);
-      console.log(`  File Discovery: ${fileDiscoveryMs}ms`);
-      console.log(`  Signature Computing: ${signatureComputingMs}ms (avg: ${averageFileProcessingMs.toFixed(2)}ms/file)`);
-      console.log(`  Duplicate Comparing: ${duplicateComparingMs}ms (avg: ${averageComparisonMs.toFixed(4)}ms/comparison)`);
-      console.log(`  Total Comparisons: ${totalComparisons.toLocaleString()}`);
-      console.log(`  Files Processed: ${signatures.size}, Skipped: ${skippedCount}`);
       
       return this.buildResult(duplicates, signatures.size, skippedCount, startTime, false, timing);
     } finally {
@@ -280,12 +264,12 @@ export class ScanService {
   }
 
   private buildResult(
-    duplicates: any[],
+    duplicates: DuplicatePair[],
     scannedCount: number,
     skippedCount: number,
     startTime: number,
     cancelled: boolean,
-    timing?: any
+    timing?: ScanResult['timing']
   ): ScanResult {
     return {
       duplicates: cancelled ? [] : duplicates,

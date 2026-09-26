@@ -32,7 +32,7 @@ export class MinHasher {
     const shingles = filteredShingles ?? this.createShingles(content);
     
     if (shingles.size === 0) {
-      return new Array(this.numHashes).fill(0xFFFFFFFF);
+      return new Array<number>(this.numHashes).fill(0xFFFFFFFF);
     }
     
     const shingleHashes = Array.from(shingles).map(s => this.fnv1aHash(s));

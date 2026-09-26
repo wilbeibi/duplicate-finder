@@ -50,7 +50,7 @@ export class ProgressModal extends Modal {
       text: 'Open settings',
       cls: 'df-open-settings-btn',
     });
-    this.settingsBtn.style.display = 'none';
+    this.settingsBtn.hide();
     this.settingsBtn.addEventListener('click', () => {
       this.onOpenSettings();
       this.close();
@@ -97,10 +97,10 @@ export class ProgressModal extends Modal {
 
     if (progress.phase === 'complete' || progress.phase === 'cancelled') {
       if (this.cancelBtn) {
-        this.cancelBtn.style.display = 'none';
+        this.cancelBtn.hide();
       }
       if (this.settingsBtn && progress.phase === 'complete') {
-        this.settingsBtn.style.display = '';
+        this.settingsBtn.show();
       }
     }
   }

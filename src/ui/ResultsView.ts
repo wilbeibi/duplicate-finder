@@ -25,7 +25,7 @@ export class ResultsView extends ItemView {
   }
 
   getDisplayText(): string {
-    return 'Duplicate Finder';
+    return 'Duplicate finder';
   }
 
   getIcon(): string {
@@ -59,13 +59,13 @@ export class ResultsView extends ItemView {
     const header = container.createDiv({ cls: 'df-header' });
     
     const titleRow = header.createDiv({ cls: 'df-title-row' });
-    titleRow.createEl('h4', { text: 'Duplicate Finder' });
+    titleRow.createEl('h4', { text: 'Duplicate finder' });
     
     const scanBtn = titleRow.createEl('button', { 
       cls: 'df-scan-btn',
-      text: 'Scan Vault' 
+      text: 'Scan vault' 
     });
-    scanBtn.addEventListener('click', () => this.plugin.runScan());
+    scanBtn.addEventListener('click', () => void this.plugin.runScan());
     
     const result = this.resultStore.getResult();
     if (result) {
@@ -95,11 +95,10 @@ export class ResultsView extends ItemView {
           cls: 'df-stat df-stat-link',
           href: '#'
         });
-        ignoredLink.addEventListener('click', async (e) => {
+        ignoredLink.addEventListener('click', (e) => {
           e.preventDefault();
           this.plugin.settings.ignoredPairIds = [];
-          await this.plugin.saveSettings();
-          this.render();
+          void this.plugin.saveSettings().then(() => this.render());
         });
       }
       
@@ -176,7 +175,7 @@ export class ResultsView extends ItemView {
       cls: 'df-empty-title'
     });
     empty.createEl('p', { 
-      text: 'Click "Scan Vault" to search for duplicate notes.',
+      text: 'Run a scan to search for duplicate notes.',
       cls: 'df-empty-hint'
     });
   }
@@ -273,7 +272,7 @@ export class ResultsView extends ItemView {
       attr: { 'aria-label': 'Ignore this pair' }
     });
     ignoreBtn.setText('Ignore');
-    ignoreBtn.addEventListener('click', () => this.ignorePair(pair.id));
+    ignoreBtn.addEventListener('click', () => void this.ignorePair(pair.id));
 
     const filesContainer = card.createDiv({ cls: 'df-files' });
     
@@ -299,7 +298,7 @@ export class ResultsView extends ItemView {
     });
     nameLink.addEventListener('click', (e) => {
       e.preventDefault();
-      this.app.workspace.openLinkText(file.path, '', false);
+      void this.app.workspace.openLinkText(file.path, '', false);
     });
     
     const meta = info.createDiv({ cls: 'df-file-meta' });

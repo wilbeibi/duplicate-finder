@@ -1,6 +1,6 @@
 # Duplicate Finder for Obsidian
 
-Duplicate Finder helps you quickly spot and clean up duplicate notes in your Obsidian vault. It finds exact matches with SHA-256 and near-duplicates with MinHash similarity, then shows results in a dedicated sidebar so you can decide what to keep. Everything runs locally.
+Duplicate Finder helps you quickly spot and clean up duplicate notes in your Obsidian vault. It finds exact matches with a fast content hash (cyrb53) and near-duplicates with MinHash similarity, then shows results in a dedicated sidebar so you can decide what to keep. Everything runs locally.
 
 Use it when you import notes, merge folders, or notice repeated content. You can scan the whole vault, sort results, and remove extra copies with a confirmation step.
 
@@ -40,7 +40,7 @@ Use it when you import notes, merge folders, or notice repeated content. You can
 ## Use
 
 1. Click the ribbon icon (copy icon), or run **Duplicate Finder: Scan vault for duplicates**.
-2. Open **Duplicate Finder: Show duplicate finder results** to review matches.
+2. Open **Duplicate Finder: Show results** to review matches.
 3. Select the trash icon to remove a duplicate.
 
 ## WARNING: deletion risk
