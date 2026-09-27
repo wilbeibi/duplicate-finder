@@ -50,9 +50,9 @@ export class DuplicateFinderSettingsTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Minimum content lines')
-			.setDesc('Skip notes with fewer lines than this (default: 100)')
+			.setDesc('Skip notes with fewer lines than this (default: 50)')
 			.addText(text => text
-				.setPlaceholder('100')
+				.setPlaceholder('50')
 				.setValue(String(this.plugin.settings.minContentLines))
 				.onChange((value) => {
 					const num = parseInt(value, 10);

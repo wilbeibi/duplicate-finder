@@ -8,7 +8,7 @@ export interface DuplicateFinderSettings {
   // Scan scope
   excludeFolders: string[];        // Folders to skip (e.g., "templates")
   excludePatterns: string[];       // Regex patterns (e.g., "^daily/.*")
-  minContentLines: number;         // Skip tiny notes (default: 100 lines)
+  minContentLines: number;         // Skip tiny notes (default: 50 lines)
 
   // Similarity tuning
   similarityThreshold: number;     // 0.0 - 1.0 (default: 0.9)
@@ -20,7 +20,7 @@ export interface DuplicateFinderSettings {
 export const DEFAULT_SETTINGS: DuplicateFinderSettings = {
   excludeFolders: [],
   excludePatterns: [],
-  minContentLines: 100,
+  minContentLines: 50,
   similarityThreshold: 0.9,
   ignoredPairIds: [],
 };
