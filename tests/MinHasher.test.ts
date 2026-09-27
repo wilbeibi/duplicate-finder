@@ -48,6 +48,30 @@ describe('MinHasher', () => {
     expect(similarity).toBe(1);
   });
 
+  it('does not treat unrelated Chinese notes as similar', () => {
+    const hasher = new MinHasher();
+
+    const similarity = hasher.estimateSimilarity(
+      hasher.compute('今天天气很好，我们去公园散步。晚上回家做饭，然后看书。'),
+      hasher.compute('量子计算机利用叠加态进行并行运算。这和经典计算机完全不同。')
+    );
+
+    expect(similarity).toBeLessThan(0.1);
+  });
+
+  it('finds a lightly edited Chinese note similar', () => {
+    // 200 distinct characters; one edit changes 5 of 196 five-character
+    // shingles, so the true Jaccard similarity is 191 / 201 = 0.95.
+    const chars = Array.from({ length: 200 }, (_, i) => String.fromCharCode(0x4e00 + i));
+    const original = chars.join('');
+    chars[100] = '改';
+    const hasher = new MinHasher();
+
+    const similarity = hasher.estimateSimilarity(hasher.compute(original), hasher.compute(chars.join('')));
+
+    expect(similarity).toBeGreaterThanOrEqual(0.85);
+  });
+
   it('compares notes shorter than the shingle size as whole texts', () => {
     const hasher = new MinHasher(5, 128);
     const sig = hasher.compute('hello world');

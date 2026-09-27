@@ -76,9 +76,11 @@ export class MinHasher {
   }
 
   private createShingles(text: string): Set<string> {
+    // Unicode-aware; CJK has no spaces between words, so each character is a token.
     const words = text
       .toLowerCase()
-      .replace(/[^\w\s]/g, ' ')
+      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+      .replace(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu, ' $& ')
       .split(/\s+/)
       .filter(w => w.length > 0);
     
