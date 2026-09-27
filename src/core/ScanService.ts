@@ -277,6 +277,7 @@ export class ScanService {
       skippedCount,
       durationMs: Date.now() - startTime,
       timestamp: Date.now(),
+      cancelled,
       timing,
     };
   }

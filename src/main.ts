@@ -69,8 +69,12 @@ export default class DuplicateFinderPlugin extends Plugin {
 				progressModal.updateProgress(progress);
 			});
 			
-			this.resultStore.setResult(result);
 			progressModal.close();
+			if (result.cancelled) {
+				new Notice('Scan cancelled');
+				return;
+			}
+			this.resultStore.setResult(result);
 
 			await this.activateView();
 			

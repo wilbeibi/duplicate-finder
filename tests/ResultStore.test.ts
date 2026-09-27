@@ -19,7 +19,7 @@ function pair(pathA: string, pathB: string, similarity: number, method: Detectio
 
 function storeWith(duplicates: DuplicatePair[]): ResultStore {
   const store = new ResultStore();
-  store.setResult({ duplicates, scannedCount: 3, skippedCount: 0, durationMs: 0, timestamp: 0 });
+  store.setResult({ duplicates, scannedCount: 3, skippedCount: 0, durationMs: 0, timestamp: 0, cancelled: false });
   return store;
 }
 

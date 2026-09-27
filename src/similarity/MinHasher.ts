@@ -108,8 +108,8 @@ export class MinHasher {
   }
 
   private linearHash(x: number, a: number, b: number): number {
-    const result = (BigInt(a) * BigInt(x) + BigInt(b)) % BigInt(0x100000000);
-    return Number(result);
+    // (a * x + b) mod 2^32 without BigInt allocations.
+    return (Math.imul(a, x) + b) >>> 0;
   }
 
   private mulberry32(seed: number): () => number {

@@ -48,6 +48,7 @@ describe('scanning a vault', () => {
 
     const result = await service.scan();
 
+    expect(result.cancelled).toBe(false);
     expect(pairPaths(result.duplicates)).toEqual([['a.md', 'b.md']]);
     expect(result.duplicates[0]).toMatchObject({ method: 'exact', similarity: 1 });
   });
@@ -112,6 +113,7 @@ describe('scanning a vault', () => {
 
     const result = await service.scan(() => service.cancel());
 
+    expect(result.cancelled).toBe(true);
     expect(result.duplicates).toEqual([]);
     expect(service.isRunning()).toBe(false);
   });
@@ -124,6 +126,7 @@ describe('scanning a vault', () => {
       if (progress.phase === 'comparing') service.cancel();
     });
 
+    expect(result.cancelled).toBe(true);
     expect(result.duplicates).toEqual([]);
   });
 

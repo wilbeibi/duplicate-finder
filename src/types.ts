@@ -81,6 +81,7 @@ export interface ScanResult {
   skippedCount: number;
   durationMs: number;
   timestamp: number;
+  cancelled: boolean;
   timing?: {
     fileDiscoveryMs: number;
     contentReadingMs: number;
